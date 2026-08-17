@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debt Master — a satirical incremental game</title>
+<meta name="description" content="You are the banker. You create debt like other people grow tomatoes. An occult incremental game about interest rates, useless insurance and crises you schedule yourself.">
+<meta property="og:title" content="Debt Master">
+<meta property="og:description" content="You are the banker who pulls the strings. Create debt, sell useless insurance, raise rates at the worst possible moment.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 104'%3E%3Cpath d='M60 6 L114 98 L6 98 Z' fill='%2307060a' stroke='%23d4af37' stroke-width='6'/%3E%3Ccircle cx='60' cy='74' r='16' fill='%237a1420' stroke='%23ffe58a' stroke-width='5'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#07060a; --panel:#14111c;
+    --gold:#d4af37; --gold-dim:#8c7423; --gold-hot:#ffe58a;
+    --blood:#8c1626; --blood-hot:#d92d43;
+    --parch:#e6dcc3; --muted:#8a8199; --green:#4fd18b; --ice:#7fb2d9;
+    --edge:rgba(212,175,55,.25);
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,"Courier New",monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--ink);color:var(--parch);font-family:var(--serif);overflow:hidden}
+
+  /* ---- ambient ---- */
+  #bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  #bg .glow{position:absolute;left:50%;top:34%;width:1200px;height:1200px;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(212,175,55,.10) 0%,rgba(140,22,38,.06) 32%,transparent 62%)}
+  #bg .rays{position:absolute;left:50%;top:34%;width:1600px;height:1600px;transform:translate(-50%,-50%);
+    background:repeating-conic-gradient(from 0deg,rgba(212,175,55,.05) 0deg 3deg,transparent 3deg 12deg);
+    animation:spin 320s linear infinite;opacity:.7;
+    -webkit-mask-image:radial-gradient(circle,#000 10%,transparent 62%);mask-image:radial-gradient(circle,#000 10%,transparent 62%)}
+  @keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+  #bg .scan{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.22) 2px 4px);opacity:.5}
+  #bg .vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 40%,rgba(0,0,0,.85) 100%)}
+
+  /* ---- shell ---- */
+  #shell{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+  header{border-bottom:1px solid var(--edge);background:linear-gradient(180deg,rgba(20,17,28,.95),rgba(10,8,14,.8));
+    padding:6px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{font-size:15px;letter-spacing:.34em;color:var(--gold);text-transform:uppercase;white-space:nowrap}
+  .brand small{display:block;letter-spacing:.16em;font-size:9px;color:var(--muted);margin-top:1px}
+  #qclock{min-width:132px;border-left:1px solid var(--edge);padding-left:14px}
+  #qclock .q{font-family:var(--mono);font-size:12px;color:var(--gold-hot);letter-spacing:.08em}
+  #qclock .bar{height:3px;background:#0b0910;border:1px solid rgba(212,175,55,.2);margin-top:4px;overflow:hidden}
+  #qclock .bar i{display:block;height:100%;background:var(--gold-dim)}
+  .ticker{flex:1;min-width:180px;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-size:11px;
+    color:var(--blood-hot);border-left:1px solid var(--edge);border-right:1px solid var(--edge);padding:5px 0;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 94%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 4%,#000 94%,transparent)}
+  .ticker span{display:inline-block;padding-left:100%;animation:slide 150s linear infinite}
+  @keyframes slide{to{transform:translateX(-100%)}}
+  .hbtn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:transparent;
+    color:var(--muted);border:1px solid var(--edge);padding:5px 9px;cursor:pointer;border-radius:2px}
+  .hbtn:hover{color:var(--gold);border-color:var(--gold-dim)}
+
+  main{flex:1;display:grid;grid-template-columns:minmax(320px,368px) 1fr;min-height:0}
+
+  /* ---- altar ---- */
+  #altar{border-right:1px solid var(--edge);padding:12px 15px 18px;display:flex;flex-direction:column;gap:11px;
+    overflow-y:auto;background:linear-gradient(180deg,rgba(15,13,21,.6),rgba(7,6,10,.9))}
+  #eyewrap{display:flex;justify-content:center}
+  #eye{width:104px;height:90px;filter:drop-shadow(0 0 12px rgba(212,175,55,.4))}
+  #eye .pupil{transform-origin:center;animation:blink 13s ease-in-out infinite}
+  @keyframes blink{0%,95%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+
+  .counter{text-align:center}
+  .counter .big{font-family:var(--mono);font-size:31px;color:var(--gold-hot);line-height:1.1;text-shadow:0 0 18px rgba(212,175,55,.32)}
+  .counter .lbl{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .counter .rate{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:5px}
+  .counter .rate b{color:var(--muted);font-weight:400}
+
+  #sign{position:relative;width:100%;padding:13px 10px;cursor:pointer;user-select:none;
+    background:linear-gradient(180deg,#241a10,#140d09);border:1px solid var(--gold-dim);border-radius:3px;
+    color:var(--gold-hot);font-family:var(--serif);font-size:14px;letter-spacing:.22em;text-transform:uppercase;
+    transition:transform .06s,box-shadow .18s;box-shadow:inset 0 0 26px rgba(212,175,55,.06)}
+  #sign:hover{box-shadow:0 0 20px rgba(212,175,55,.16),inset 0 0 26px rgba(212,175,55,.12)}
+  #sign:active{transform:scale(.985)}
+  #sign small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:none;margin-top:3px}
+  #floats{position:fixed;inset:0;pointer-events:none;z-index:50}
+  .float{position:absolute;font-family:var(--mono);font-size:12px;color:var(--gold-hot);text-shadow:0 0 8px rgba(212,175,55,.6);
+    animation:rise 1.1s ease-out forwards}
+  @keyframes rise{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-48px)}}
+
+  .box{border:1px solid var(--edge);background:rgba(20,17,28,.55);border-radius:3px;padding:9px 11px}
+  .box h3{margin:0 0 7px;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);font-weight:400;
+    display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .box h3 em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--parch)}
+  input[type=range]{width:100%;accent-color:var(--blood-hot);cursor:pointer}
+  .hint{font-family:var(--mono);font-size:9.5px;color:var(--muted);line-height:1.55}
+  .pend{color:var(--ice)}
+
+  .meter{height:9px;border:1px solid var(--edge);background:#0b0910;border-radius:2px;overflow:hidden}
+  .meter i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#4a7f5e,#c9a227 55%,var(--blood-hot));transition:width .3s}
+  .meter.hot{animation:pulseRed 1.1s ease-in-out infinite}
+  @keyframes pulseRed{50%{box-shadow:0 0 12px rgba(217,45,67,.65)}}
+
+  .crisisbtn{width:100%;margin-top:8px;padding:9px;cursor:pointer;border-radius:2px;
+    background:linear-gradient(180deg,#3a0d16,#1a060b);border:1px solid #5e1420;color:#e79aa6;
+    font-family:var(--serif);letter-spacing:.18em;text-transform:uppercase;font-size:11.5px}
+  .crisisbtn:enabled:hover{border-color:var(--blood-hot);color:#fff;box-shadow:0 0 18px rgba(217,45,67,.26)}
+  .crisisbtn:disabled{opacity:.32;cursor:not-allowed}
+
+  /* ---- panels ---- */
+  #right{display:flex;flex-direction:column;min-height:0}
+  .tabs{display:flex;border-bottom:1px solid var(--edge);background:rgba(10,8,14,.6)}
+  .tab{flex:1;padding:10px 4px;text-align:center;cursor:pointer;font-size:9.5px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);border-right:1px solid var(--edge);white-space:nowrap}
+  .tab:last-child{border-right:0}
+  .tab.on{color:var(--gold);background:rgba(212,175,55,.06);box-shadow:inset 0 -2px 0 var(--gold-dim)}
+  .tab.off{opacity:.3;cursor:not-allowed}
+  .tab .dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:5px;
+    vertical-align:middle;animation:pulseDot 1.8s infinite}
+  @keyframes pulseDot{50%{opacity:.25}}
+  .pane{flex:1;overflow-y:auto;padding:12px 14px 44px;display:none}
+  .pane.on{display:block}
+
+  .paneHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .sect{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-dim);
+    border-bottom:1px solid var(--edge);padding-bottom:5px;flex:1;min-width:140px}
+  .mults{display:flex;gap:4px}
+  .mult{font-family:var(--mono);font-size:10px;padding:4px 9px;border:1px solid var(--edge);color:var(--muted);
+    cursor:pointer;border-radius:2px;background:transparent}
+  .mult.on{color:var(--gold-hot);border-color:var(--gold-dim);background:rgba(212,175,55,.1)}
+
+  .item{display:grid;grid-template-columns:30px 1fr auto;gap:11px;align-items:center;
+    border:1px solid rgba(212,175,55,.14);background:rgba(20,17,28,.5);padding:8px 11px;border-radius:3px;
+    margin-bottom:6px;cursor:pointer;transition:.14s}
+  .item:hover{border-color:var(--gold-dim);background:rgba(31,26,42,.7)}
+  .item.locked{opacity:.34;cursor:not-allowed;filter:grayscale(.6)}
+  .item.owned{border-color:rgba(79,209,139,.32);background:rgba(20,40,30,.32);cursor:default}
+  .sig{font-size:17px;text-align:center;line-height:1;color:var(--gold);filter:drop-shadow(0 0 6px rgba(212,175,55,.35))}
+  .nm{font-size:13.5px;color:var(--parch)}
+  .ds{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.55}
+  .rt{font-family:var(--mono);font-size:9.5px;color:var(--green);margin-top:2px}
+  .buy{text-align:right;white-space:nowrap}
+  .buy .cost{font-family:var(--mono);font-size:12.5px;color:var(--gold-hot)}
+  .buy .cost.no{color:#6b5f4a}
+  .buy .cnt{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+
+  /* ---- dossiers ---- */
+  .dos{border:1px solid rgba(212,175,55,.16);background:rgba(20,17,28,.55);border-radius:3px;padding:11px 13px;margin-bottom:9px}
+  .dos.act{border-color:rgba(127,178,217,.4);background:rgba(16,24,34,.55)}
+  .dos.done{border-color:rgba(79,209,139,.3);background:rgba(18,34,26,.35);opacity:.75}
+  .dos .code{font-family:var(--mono);font-size:9px;color:var(--gold-dim);letter-spacing:.18em}
+  .dos .ti{font-size:15px;color:var(--gold-hot);margin:2px 0 6px}
+  .dos .bd{font-family:var(--mono);font-size:10.5px;color:var(--parch);line-height:1.75;opacity:.9}
+  .dos .goal{font-family:var(--mono);font-size:10px;color:var(--ice);margin-top:8px}
+  .dos .rew{font-family:var(--mono);font-size:10px;color:var(--gold);margin-top:3px}
+  .dos .foot{display:flex;gap:8px;align-items:center;margin-top:9px}
+  .pbar{flex:1;height:6px;background:#0b0910;border:1px solid var(--edge);overflow:hidden;border-radius:2px}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,#3d6a86,var(--ice))}
+  .dbtn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;
+    border:1px solid var(--gold-dim);background:rgba(212,175,55,.08);color:var(--gold-hot);cursor:pointer;border-radius:2px}
+  .dbtn:disabled{opacity:.3;cursor:not-allowed}
+  .dbtn.claim{border-color:var(--green);color:var(--green);background:rgba(79,209,139,.1);animation:pulseDot 1.4s infinite}
+
+  /* ---- tree ---- */
+  #treeWrap{position:relative;margin-top:6px}
+  .treeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;position:relative;z-index:2}
+  .branchHead{font-size:10px;letter-spacing:.24em;text-transform:uppercase;text-align:center;padding-bottom:7px;
+    border-bottom:1px solid var(--edge);color:var(--gold)}
+  .node{border:1px solid rgba(212,175,55,.18);background:rgba(16,13,22,.9);border-radius:3px;padding:8px 10px;
+    cursor:pointer;transition:.15s;position:relative}
+  .node:hover{border-color:var(--gold-dim)}
+  .node .nn{font-size:12.5px;color:var(--parch);line-height:1.3}
+  .node .nd{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .node .nc{font-family:var(--mono);font-size:10.5px;color:var(--gold-hot);margin-top:5px}
+  .node.have{border-color:rgba(79,209,139,.45);background:rgba(18,34,26,.6)}
+  .node.have .nc{color:var(--green)}
+  .node.lock{opacity:.4;cursor:not-allowed}
+  .node.can{box-shadow:0 0 14px rgba(212,175,55,.16);border-color:var(--gold)}
+  .link{height:12px;display:flex;justify-content:center}
+  .link i{width:1px;background:rgba(212,175,55,.3);display:block}
+  .link.on i{background:var(--green);width:2px}
+
+  .stat{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;padding:5px 0;
+    border-bottom:1px dotted rgba(212,175,55,.13)}
+  .stat b{color:var(--gold-hot);font-weight:400}
+  .empty{font-family:var(--mono);font-size:10.5px;color:var(--muted);padding:22px 4px;text-align:center;line-height:1.9}
+  .disp{font-family:var(--mono);font-size:10px;color:var(--muted);padding:4px 0;border-bottom:1px dotted rgba(212,175,55,.1);line-height:1.6}
+  .disp b{color:var(--gold-dim);font-weight:400}
+  .disp.evt{color:#e79aa6}
+  .disp.win{color:var(--green)}
+
+  /* ---- modal ---- */
+  #modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(2,1,4,.87);padding:16px}
+  #modal.on{display:flex}
+  .card{width:min(580px,94vw);max-height:88vh;overflow-y:auto;border:1px solid var(--gold-dim);
+    background:linear-gradient(180deg,#181320,#0c0912);padding:20px 22px;border-radius:4px;box-shadow:0 0 60px rgba(212,175,55,.12)}
+  .card h2{margin:0 0 10px;color:var(--gold);font-weight:400;letter-spacing:.16em;text-transform:uppercase;font-size:14px}
+  .card p{font-family:var(--mono);font-size:11.5px;color:var(--parch);line-height:1.8}
+  .card textarea{width:100%;height:104px;background:#07060a;border:1px solid var(--edge);color:var(--green);
+    font-family:var(--mono);font-size:9.5px;padding:8px;border-radius:2px;resize:none}
+  .row{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+  #flash{position:fixed;inset:0;z-index:60;pointer-events:none;background:radial-gradient(circle,rgba(217,45,67,.3),transparent 70%);opacity:0;transition:opacity .6s}
+  #flash.on{opacity:1}
+
+  /* ---- title screen ---- */
+  #intro{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 42%,#151020 0%,#050408 70%);padding:20px;overflow-y:auto}
+  #intro.gone{display:none}
+  .introBox{max-width:640px;text-align:center;animation:fadeUp 1.1s ease-out}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .introBox svg{width:150px;height:130px;filter:drop-shadow(0 0 26px rgba(212,175,55,.45))}
+  .introBox h1{font-size:34px;letter-spacing:.4em;color:var(--gold);margin:14px 0 2px;text-transform:uppercase;font-weight:400;
+    text-shadow:0 0 30px rgba(212,175,55,.3)}
+  .introBox .sub{font-family:var(--mono);font-size:10px;letter-spacing:.34em;color:var(--muted);text-transform:uppercase}
+  .introBox .lede{font-size:16px;line-height:1.85;color:var(--parch);margin:24px auto 8px;max-width:520px}
+  .introBox .lede em{color:var(--gold-hot);font-style:normal}
+  .introRules{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:24px 0 8px;text-align:left}
+  .introRules div{border:1px solid var(--edge);border-radius:3px;padding:9px 11px;background:rgba(20,17,28,.5)}
+  .introRules b{display:block;color:var(--gold);font-weight:400;font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px}
+  .introRules span{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6}
+  #begin{margin-top:26px;padding:15px 44px;cursor:pointer;background:linear-gradient(180deg,#2b1f12,#150e08);
+    border:1px solid var(--gold-dim);color:var(--gold-hot);font-family:var(--serif);font-size:16px;
+    letter-spacing:.3em;text-transform:uppercase;border-radius:3px;transition:.2s}
+  #begin:hover{box-shadow:0 0 30px rgba(212,175,55,.28);border-color:var(--gold)}
+  .introFoot{font-family:var(--mono);font-size:9.5px;color:#57506a;margin-top:22px;line-height:1.8}
+
+  @media (max-width:860px){
+    html,body{height:auto}
+    body{overflow-y:auto;overflow-x:hidden}
+    #shell{height:auto;min-height:100%}
+    /* grid children default to a min-content floor, which the 5-tab row blew
+       past and pushed the whole layout wider than the phone. */
+    main{grid-template-columns:1fr}
+    #altar,#right{min-width:0}
+    #altar{border-right:0;border-bottom:1px solid var(--edge)}
+    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .tabs::-webkit-scrollbar{height:0}
+    .tab{flex:0 0 auto;padding:11px 15px}
+    .pane{overflow:visible;flex:none}
+    .treeGrid{grid-template-columns:1fr}
+    .link{height:8px}
+    header{gap:8px;row-gap:6px}
+    #qclock{min-width:0;padding-left:10px}
+    .ticker{order:9;flex-basis:100%;border-left:0;border-right:0}
+    .item{grid-template-columns:26px 1fr auto;gap:8px}
+    .counter .big{font-size:27px}
+  }
+  ::-webkit-scrollbar{width:9px}
+  ::-webkit-scrollbar-track{background:#0a080e}
+  ::-webkit-scrollbar-thumb{background:#2b2438;border:1px solid rgba(212,175,55,.2)}
+</style>
+</head>
+<body>
+<div id="bg"><div class="rays"></div><div class="glow"></div><div class="scan"></div><div class="vig"></div></div>
+<div id="flash"></div><div id="floats"></div>
+
+<div id="shell">
+  <header>
+    <div class="brand">Debt Master<small>Chapter I — The Pyramid Awakens</small></div>
+    <div id="qclock"><div class="q" id="qLbl">Q1 · Y1</div><div class="bar"><i id="qBar"></i></div></div>
+    <div class="ticker"><span id="tick"></span></div>
+    <button class="hbtn" id="btnSave">Export</button>
+    <button class="hbtn" id="btnLoad">Import</button>
+    <button class="hbtn" id="btnWipe">Wipe</button>
+  </header>
+
+  <main>
+    <section id="altar">
+      <div id="eyewrap">
+        <svg id="eye" viewBox="0 0 120 104" aria-hidden="true">
+          <path d="M60 6 L114 98 L6 98 Z" fill="none" stroke="#d4af37" stroke-width="1.6" opacity=".9"/>
+          <path d="M60 20 L100 90 L20 90 Z" fill="none" stroke="#8c7423" stroke-width=".8" opacity=".7"/>
+          <path d="M22 62 H98" stroke="#8c7423" stroke-width=".8" opacity=".6"/>
+          <g class="pupil">
+            <path d="M36 74 Q60 52 84 74 Q60 96 36 74 Z" fill="#0b0910" stroke="#d4af37" stroke-width="1.4"/>
+            <circle cx="60" cy="74" r="8.5" fill="#7a1420" stroke="#ffe58a" stroke-width="1"/>
+            <circle cx="60" cy="74" r="3.4" fill="#07060a"/>
+            <circle cx="63" cy="71" r="1.3" fill="#ffe58a" opacity=".85"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="counter">
+        <div class="big" id="debt">0</div>
+        <div class="lbl">Debt Under Management</div>
+        <div class="rate" id="rate">+0 /sec</div>
+      </div>
+
+      <button id="sign">Sign a Loan<small id="signSub">+1 per signature</small></button>
+
+      <div class="box">
+        <h3>Policy Rate <em id="irLbl">0%</em></h3>
+        <input type="range" id="ir" min="0" max="25" step="1" value="0">
+        <div class="hint" id="irHint"></div>
+      </div>
+
+      <div class="box">
+        <h3>Civil Unrest <em id="unLbl">0%</em></h3>
+        <div class="meter" id="unMeter"><i id="unBar"></i></div>
+        <div class="hint" id="unHint" style="margin-top:7px"></div>
+        <button class="crisisbtn" id="crisis" disabled>Engineer a Crisis</button>
+        <div class="hint" id="cHint" style="margin-top:6px"></div>
+      </div>
+
+      <div class="box" id="assetBox" style="display:none">
+        <h3>Seized Assets <em id="asLbl">0</em></h3>
+        <div class="hint">Spent in <b style="color:var(--gold)">The Pyramid</b>. They survive every collapse — that is the point of them.</div>
+      </div>
+    </section>
+
+    <section id="right">
+      <div class="tabs">
+        <div class="tab on" data-p="Ops">Operations <span class="dot" id="dOps" style="display:none"></span></div>
+        <div class="tab" data-p="Doc">Doctrines <span class="dot" id="dDoc" style="display:none"></span></div>
+        <div class="tab" data-p="Dos">Dossiers <span class="dot" id="dDos" style="display:none"></span></div>
+        <div class="tab" data-p="Pyr">The Pyramid <span class="dot" id="dPyr" style="display:none"></span></div>
+        <div class="tab" data-p="Led">Ledger</div>
+      </div>
+      <div class="pane on" id="pOps"></div>
+      <div class="pane" id="pDoc"></div>
+      <div class="pane" id="pDos"></div>
+      <div class="pane" id="pPyr"></div>
+      <div class="pane" id="pLed"></div>
+    </section>
+  </main>
+</div>
+
+<div id="intro"><div class="introBox">
+  <svg viewBox="0 0 120 104" aria-hidden="true">
+    <path d="M60 6 L114 98 L6 98 Z" fill="none" stroke="#d4af37" stroke-width="1.6"/>
+    <path d="M60 20 L100 90 L20 90 Z" fill="none" stroke="#8c7423" stroke-width=".8" opacity=".7"/>
+    <path d="M22 62 H98" stroke="#8c7423" stroke-width=".8" opacity=".6"/>
+    <path d="M36 74 Q60 52 84 74 Q60 96 36 74 Z" fill="#0b0910" stroke="#d4af37" stroke-width="1.4"/>
+    <circle cx="60" cy="74" r="8.5" fill="#7a1420" stroke="#ffe58a" stroke-width="1"/>
+    <circle cx="60" cy="74" r="3.4" fill="#07060a"/>
+  </svg>
+  <h1>Debt Master</h1>
+  <div class="sub">Chapter I — The Pyramid Awakens</div>
+  <p class="lede">You are the banker. You create debt the way other people grow tomatoes.<br>
+    You sell insurance that covers nothing, you raise rates at the worst possible moment,
+    and when the anger becomes unmanageable you <em>schedule the collapse yourself</em> — because
+    a crisis you planned is simply a quarter with better margins.</p>
+  <div class="introRules">
+    <div><b>Originate</b><span>Buy operations. They run without you. Clicking only bootstraps the first minute.</span></div>
+    <div><b>Squeeze</b><span>A higher policy rate pays more and angers more. Rates take effect next quarter.</span></div>
+    <div><b>Collapse</b><span>Harvest the unrest before it becomes a revolt. Seized Assets build the Pyramid.</span></div>
+  </div>
+  <button id="begin">Take the Desk</button>
+  <div class="introFoot">Satire. Every conspiracy here is either absurd or a matter of public record.<br>
+    Progress saves automatically in this browser.</div>
+</div></div>
+<div id="modal"><div class="card" id="card"></div></div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   DEBT MASTER — prototype v0.2
+   Single file, no external deps, no browser storage (manual ledger export).
+   Design notes:
+     · Time is measured in fiscal quarters (QSEC seconds each). Policy-rate
+       changes only take effect at the next quarter — the game is meant to be
+       decided in quarters, not in clicks.
+     · Clicking never scales with income. It bootstraps the first minute only.
+     · Crises yield Seized Assets, which are SPENT in a prestige tree.
+     · Dossiers unlock after the first crisis and are grounded in documented
+       mechanisms of financial/political capture, using unnamed archetypes.
+   ========================================================================== */
+
+const QSEC = 120;          // seconds of game time per fiscal quarter
+const COSTGROW = 1.14;     // per-unit cost growth
+
+/* ---------- formatting ---------- */
+const SUF=["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","Ud","Dd"];
+function fmt(n){
+  if(!isFinite(n))return"∞";
+  if(n<0)return"-"+fmt(-n);
+  if(n<1000)return (n<10&&n%1!==0)?n.toFixed(1):Math.floor(n).toString();
+  let t=0;while(n>=1000&&t<SUF.length-1){n/=1000;t++;}
+  return n.toFixed(n<10?2:n<100?1:0)+SUF[t];
+}
+const money=n=>"§"+fmt(n);
+const qName=q=>"Q"+(q%4+1)+" · Y"+(Math.floor(q/4)+1);
+
+/* ---------- operations ---------- */
+const GENS=[
+ {id:"payday",  sig:"₪", name:"Payday Kiosk",            cost:12,     rate:0.08,
+  ds:"400% APR, but the neon sign says FRIENDLY."},
+ {id:"cards",   sig:"▤", name:"Credit Card Division",     cost:135,    rate:0.7,
+  ds:"Minimum payment: eternal. Rewards: a keychain."},
+ {id:"mortgage",sig:"⌂", name:"Mortgage Mill",            cost:1700,   rate:5.5,
+  ds:"Thirty years is basically forever. Forever is basically ours."},
+ {id:"student", sig:"🜁", name:"Student Loan Farm",        cost:21000,  rate:34,
+  ds:"We sell the dream, finance the dream, then repossess the dreamer."},
+ {id:"insure",  sig:"☂", name:"Useless Insurance Bureau", cost:270000, rate:205,
+  ds:"Covers everything except what happens. Bundled by default."},
+ {id:"cdo",     sig:"▦", name:"Subprime Bundling Floor",  cost:3.6e6,  rate:1250,
+  ds:"Slice the bad debt thin enough and the rating comes back AAA."},
+ {id:"sov",     sig:"⚑", name:"Sovereign Debt Desk",      cost:4.8e7,  rate:7600,
+  ds:"Nations are simply very large customers with flags and anthems."},
+ {id:"cbank",   sig:"⚖", name:"Central Bank Annex",       cost:7.0e8,  rate:46000,
+  ds:"The printing press has no off switch. We have checked. Twice."},
+ {id:"reptile", sig:"🜏", name:"Reptilian Reserve Board",  cost:1.1e10, rate:290000,
+  ds:"Cold-blooded, unblinking, unnervingly good at compound interest."},
+ {id:"lunar",   sig:"☾", name:"Lunar Collateral Vault",   cost:1.9e11, rate:1.8e6,
+  ds:"The landing was real. We were there to collect the deed."}
+];
+
+/* ---------- doctrines ---------- */
+/* kind: click | glob | gen | calm */
+const UPS=[
+ {id:"fineprint",sig:"✒",name:"The Fine Print, Set in 2pt",cost:110,kind:"click",v:2,
+  ds:"Legally binding, physically unreadable. ×2 per signature.",req:{gen:"payday",n:1}},
+ {id:"fluoride",sig:"🜄",name:"Fluoride Rebate Program",cost:1400,kind:"glob",v:1.4,
+  ds:"We fund the water treatment, so we choose the treatment. All income ×1.4.",req:{debt:1000}},
+ {id:"neon",sig:"✦",name:"Deceptive Neon Signage",cost:5200,kind:"gen",g:"payday",v:3,
+  ds:"The word FRIENDLY, in a font that has never once been friendly. Kiosks ×3.",req:{gen:"payday",n:12}},
+ {id:"pen",sig:"✎",name:"Golden Fountain Pen",cost:16000,kind:"click",v:3,
+  ds:"Heavier than it looks. Signs anything. ×3 per signature.",req:{debt:11000}},
+ {id:"chem",sig:"✈",name:"Chemtrail Media Buy",cost:88000,kind:"glob",v:1.8,
+  ds:"Brand awareness, delivered at 30,000 feet. All income ×1.8.",req:{debt:60000}},
+ {id:"bread",sig:"❖",name:"Bread & Circuses Subsidy",cost:7.5e5,kind:"calm",v:.22,
+  ds:"A stadium is cheaper than a concession. Unrest accrues 22% slower.",req:{debt:5e5}},
+ {id:"consent",sig:"☑",name:"Pre-Checked Consent Boxes",cost:1.8e6,kind:"gen",g:"insure",v:3,
+  ds:"They agreed. It says so, greyed out, on page 37. Bureaus ×3.",req:{gen:"insure",n:6}},
+ {id:"heli",sig:"⌖",name:"Black-Helicopter Collections",cost:2.4e6,kind:"glob",v:1.8,
+  ds:"Unmarked, unaccountable, unusually punctual. All income ×1.8.",req:{debt:1.6e6}},
+ {id:"oath",sig:"☩",name:"Blood-Oath Signature Line",cost:1.2e7,kind:"click",v:5,
+  ds:"Ink is a formality. ×5 per signature.",req:{debt:8e6}},
+ {id:"birds",sig:"⌁",name:"Birds Are Not Real (They're Auditors)",cost:4.2e7,kind:"glob",v:1.8,
+  ds:"Every pigeon a receipt. Every receipt a lien. All income ×2.",req:{gen:"student",n:20}},
+ {id:"sedate",sig:"⚕",name:"Sedative Tier in the Water",cost:1.4e8,kind:"calm",v:.22,
+  ds:"Sold as wellness, priced as wellness. Unrest accrues 22% slower.",req:{debt:9e7}},
+ {id:"denver",sig:"⛰",name:"Denver Airport, Sub-Basement 7",cost:6.5e8,kind:"glob",v:1.8,
+  ds:"The murals were a disclosure. Nobody read those either. All income ×2.",req:{gen:"insure",n:18}},
+ {id:"ratings",sig:"▩",name:"Issuer-Pays Rating Model",cost:2.1e9,kind:"gen",g:"cdo",v:3,
+  ds:"The rated party pays the rater. Everyone calls this a problem, then renews. Floors ×3.",req:{gen:"cdo",n:8}},
+ {id:"autopen",sig:"⚙",name:"Autopen of the Elders",cost:5.5e9,kind:"click",v:8,
+  ds:"It signs while you sleep. It signs what you sleep on. ×8 per signature.",req:{debt:3.6e9}},
+ {id:"grove",sig:"⚜",name:"Bohemian Grove Networking Retreat",cost:1.4e10,kind:"glob",v:1.9,
+  ds:"Two weeks of robes, owls and extremely favourable term sheets. ×2.2.",req:{gen:"sov",n:10}},
+ {id:"narrative",sig:"⌘",name:"Own the Narrative Outright",cost:4.5e10,kind:"calm",v:.3,
+  ds:"Cheaper to buy the newsroom than to answer it. Unrest 30% slower.",req:{debt:3e10}},
+ {id:"cold",sig:"⌬",name:"Cold-Blooded Compounding",cost:2.2e11,kind:"gen",g:"reptile",v:3,
+  ds:"They do not sleep, blink, or forgive a late fee. Reserve Board ×3.",req:{gen:"reptile",n:6}},
+ {id:"flat",sig:"⬢",name:"Flat-Earth Cartography Dept.",cost:5.5e11,kind:"glob",v:1.9,
+  ds:"If the world has edges, the balance sheet has edge cases. ×2.2.",req:{gen:"cbank",n:12}},
+ {id:"audit",sig:"◉",name:"The All-Seeing Audit",cost:4e12,kind:"glob",v:2,
+  ds:"It sees the ledger. It also sees the other ledger. All income ×2.5.",req:{gen:"reptile",n:10}},
+ {id:"g5",sig:"⌇",name:"5G Debt Broadcast Array",cost:4.5e13,kind:"glob",v:2,
+  ds:"Origination at the speed of light, straight to the fillings. ×2.5.",req:{gen:"reptile",n:22}},
+ {id:"dream",sig:"❂",name:"Signatures Harvested During Sleep",cost:2.6e14,kind:"click",v:15,
+  ds:"You dreamt of a house. You woke up owing one. ×15 per signature.",req:{debt:1.8e14}},
+ {id:"score",sig:"⊞",name:"Universal Behaviour Score",cost:9e14,kind:"glob",v:2.2,
+  ds:"Not a credit score. A conduct score. Priced accordingly. All income ×3.",req:{gen:"lunar",n:12}},
+ {id:"weather",sig:"❋",name:"Weather Derivatives Desk",cost:8e15,kind:"glob",v:2.2,
+  ds:"We do not control the weather. We are merely positioned for it. ×3.",req:{gen:"lunar",n:22}},
+ {id:"eternal",sig:"∞",name:"The Perpetual Instrument",cost:9e16,kind:"glob",v:2.5,
+  ds:"Principal never matures. Interest never stops. Nobody signed it and everybody owes it. ×3.5.",req:{gen:"lunar",n:35}}
+];
+
+/* ---------- prestige tree (linear branches) ---------- */
+const TREE={
+ capital:{ name:"Capital", sig:"§", nodes:[
+  {id:"c1",cost:1, name:"Fractional Reserve Doctrine",nd:"Lend what you do not have; charge for the privilege. All income ×1.25.",inc:1.25},
+  {id:"c2",cost:3, name:"Preferred Creditor Status",  nd:"You are paid first, by statute, before wages. Operations cost −8%.",cost_:0.08},
+  {id:"c3",cost:6, name:"Compounding Without Consent",nd:"Interest on interest, applied nightly, disclosed annually. All income ×1.5.",inc:1.5},
+  {id:"c4",cost:11,name:"Off-Balance-Sheet Vehicles", nd:"If it is not on the sheet it cannot be questioned. Operations cost −15%.",cost_:0.15},
+  {id:"c5",cost:20,name:"The Perpetual Rollover",     nd:"Nothing is ever repaid, only refinanced. Income ×2, and 10% of your operations survive each collapse.",inc:2,keep:0.10}
+ ]},
+ state:{ name:"The State", sig:"⚖", nodes:[
+  {id:"s1",cost:1, name:"Lobbying Retainer",      nd:"A modest annual fee, an immodest annual return. Unrest accrues 15% slower.",calm:0.15},
+  {id:"s2",cost:3, name:"Regulatory Capture",     nd:"You now write the rules you are audited against. Policy rate ceiling raised to 35%.",maxrate:35},
+  {id:"s3",cost:7, name:"The Revolving Door",     nd:"Your compliance chief drafted the statute last spring. Unrest accrues 20% slower.",calm:0.20},
+  {id:"s4",cost:13,name:"Emergency Powers Clause",nd:"Written for a war, invoked for a quarter. Revolts cut income to 70% instead of 40%.",softrevolt:1},
+  {id:"s5",cost:22,name:"Sovereign Immunity Rider",nd:"The collapse is now a sovereign act, and sovereign acts are not tried. Crises can be engineered from 20% unrest.",thresh:20}
+ ]},
+ info:{ name:"Information", sig:"◉", nodes:[
+  {id:"i1",cost:1, name:"The Dossier Room",       nd:"A quiet floor, no windows, excellent filing. +1 active dossier slot.",slot:1},
+  {id:"i2",cost:4, name:"Advance Notice",         nd:"You are briefed before the meeting that decides it. Rate changes take effect immediately, with no quarter of lag.",nolag:1},
+  {id:"i3",cost:8, name:"The Insider Channel",    nd:"Information is only valuable while it is scarce. Dossier rewards ×1.5.",drew:1.5},
+  {id:"i4",cost:14,name:"Predictive Underwriting",nd:"We price the default before the borrower has considered it. All income ×1.25.",inc:1.25},
+  {id:"i5",cost:24,name:"The Whole Signal",       nd:"Every transaction, every device, every hesitation before a purchase. All income ×2.5, +1 dossier slot.",inc:2.5,slot:1}
+ ]}
+};
+const ALLNODES=[].concat(TREE.capital.nodes,TREE.state.nodes,TREE.info.nodes);
+
+/* Repeatable capstone purchases — the tree is finite, ambition is not. */
+const CAPS=[
+ {id:"tranche",name:"Additional Capital Tranche",base:26,grow:1.32,
+  nd:"Another slice, senior to the last one, senior to everything. Compounding ×1.12 per tranche."},
+ {id:"retainer",name:"Standing Political Retainer",base:22,grow:1.30,
+  nd:"Paid quarterly, in advance, to people who have not yet been elected. Unrest accrues 4% slower per retainer."},
+ {id:"archive",name:"Archive Expansion",base:30,grow:1.35,
+  nd:"More filing, more floors, more things known before they are announced. Dossier rewards +10% per expansion."}
+];
+const capLvl=id=>(S.caps&&S.caps[id])||0;
+const capCost=c=>Math.ceil(c.base*Math.pow(c.grow,capLvl(c.id)));
+const capInc  =()=>Math.pow(1.12,capLvl("tranche"));
+const capCalm =()=>Math.pow(0.96,capLvl("retainer"));
+const capDrew =()=>Math.pow(1.10,capLvl("archive"));
+
+/* ---------- dossiers ----------
+   Grounded in documented, widely-reported mechanisms. Actors are archetypes,
+   not real named individuals. */
+const DOSSIERS=[
+ {id:"d1",code:"DOSSIER 01",name:"The Revolving Door",rew:2,
+  bd:"Your new Head of Compliance spent nine years at the agency that supervises you. She drafted the rule. She now interprets the rule. Her replacement at the agency came from your third floor.<br><br>Nothing here is illegal. That is not an oversight — it is the entire design.",
+  goal:"Own 30 Credit Card Divisions", cur:()=>S.gens[1], need:30},
+
+ {id:"d2",code:"DOSSIER 02",name:"The Committee Leak",rew:3,
+  bd:"A legislator sits on the committee that will move the rate. She is briefed on Tuesday. Her portfolio moves on Wednesday. The disclosure is filed late, and the penalty for filing late is two hundred dollars.<br><br>There is a law against this. There is also a fine schedule, and the fine schedule is cheaper than the trade.",
+  goal:"Hold the policy rate at 16% or above for 3 consecutive quarters", cur:()=>S.hiStreak, need:3},
+
+ {id:"d3",code:"DOSSIER 03",name:"The Ratings Courtesy",rew:4,
+  bd:"The institution being rated selects and pays the agency that rates it. Should the rating disappoint, there are two other agencies, and they would also like the business.<br><br>Everyone agrees this is a structural conflict. Everyone agrees to renew it annually.",
+  goal:"Own 15 Subprime Bundling Floors", cur:()=>S.gens[5], need:15},
+
+ {id:"d4",code:"DOSSIER 04",name:"Too Big to Jail",rew:5,
+  bd:"Deferred prosecution: the institution pays a sum, admits no wrongdoing, and names no individual. Prosecutors cite the systemic risk of an indictment — which is to say, the bank is now too structurally important to be tried.<br><br>The cheque clears before the press release goes out.",
+  goal:"Endure a revolt without cutting your rate", cur:()=>S.f_revolt, need:1},
+
+ {id:"d5",code:"DOSSIER 05",name:"Structural Adjustment",rew:6,
+  bd:"The facility is approved on conditions: freeze the pensions, privatise the water, open the ports, cut the subsidy on bread. The conditions are called reforms. Reforms are not negotiated, and reforms are not called conditions.<br><br>A parliament may vote on it. A parliament may also decline the facility.",
+  goal:"Own 12 Sovereign Debt Desks", cur:()=>S.gens[6], need:12},
+
+ {id:"d6",code:"DOSSIER 06",name:"The Bailout Facility",rew:8,
+  bd:"Losses are private while they are survivable. Above that line they become everyone's, and the transfer is arranged over a weekend, because Monday is a market and a market can be described as a hostage.<br><br>The institutions that received the support paid bonuses that year. This was reported, at length, and changed nothing.",
+  goal:"Engineer a crisis while income is at or above §4M/sec", cur:()=>S.f_bail, need:1},
+
+ {id:"d7",code:"DOSSIER 07",name:"Consent by Default",rew:9,
+  bd:"Forty-one pages, pre-checked, at 2am, on a phone, between two other tasks. Legally, they read it. Statistically, no human being has ever read it.<br><br>The cover charge is a signature. The product is the data. The insurance is a garnish nobody ordered and everybody pays for.",
+  goal:"Own 25 Useless Insurance Bureaus", cur:()=>S.gens[4], need:25},
+
+ {id:"d8",code:"DOSSIER 08",name:"The Surveillance Dividend",rew:11,
+  bd:"Every transaction is a data point, every data point is a risk score, and every risk score is a price. Access to the system now requires consenting to be read by it — and the alternative to the system is cash, which is being quietly retired for reasons of safety.<br><br>They traded the privacy for the convenience. We booked the convenience as revenue.",
+  goal:"Keep unrest under 25% for 5 consecutive quarters", cur:()=>S.calmStreak, need:5},
+
+ {id:"d9",code:"DOSSIER 09",name:"The Lobby Ratio",rew:14,
+  bd:"Published estimates put the return on a well-placed lobbying budget in the hundreds to one — a carve-out here, a delayed implementation date there. No other line in the business comes close to it.<br><br>We have stopped booking it as an expense. It is now, correctly, capital expenditure.",
+  goal:"Enact 16 doctrines in a single cycle", cur:()=>Object.keys(S.ups).length, need:16},
+
+ {id:"d10",code:"DOSSIER 10",name:"Debt Ceiling Theatre",rew:18,
+  bd:"The deadline is real, the brinkmanship is scheduled, and the resolution was drafted before the argument began. Two weeks of televised anguish, one signature, and a permanent ratchet in whose favour the next round starts.<br><br>We are long volatility and long the resolution. There is no position in which we are not paid.",
+  goal:"Engineer 4 crises in total", cur:()=>S.crises, need:4}
+];
+
+const HEADLINES=[
+ "Central bank denies existence of the basement. Basement denies existence of the central bank.",
+ "Nine of ten economists endorse the framework; tenth economist unreachable, last seen near Denver.",
+ "Consumer protection act passes unanimously. Nobody can locate the text of it.",
+ "Owl-themed retreat concludes; all attendees report 'nothing happened' in perfect unison.",
+ "Pigeon population up 12%. Audit backlog down 12%. Officials describe this as a coincidence.",
+ "Regulator announces sweeping reform, then announces the reform was itself uninsured.",
+ "Moon confirmed as collateral in three jurisdictions. Moon declines to comment.",
+ "Flat-earth cartographers win contract to redraw the risk perimeter. No edges found.",
+ "Water utility adds a wellness tier. Complaints fall sharply. Everything falls sharply.",
+ "Rating agency upgrades a stack of receipts to AAA, citing structure and, separately, vibes.",
+ "Whistleblower releases 400 pages set in 2pt. Investigation stalls at page one.",
+ "Helicopter noise complaints filed. Complaints collected by helicopter.",
+ "Nation refinances itself and becomes a subsidiary. Anthem retained for brand continuity.",
+ "Board member sets record for longest unblinking earnings call. Analysts 'impressed, cold'.",
+ "Public urged to remain calm. Calm is now a subscription, billed quarterly.",
+ "Historic settlement: bank admits nothing, keeps everything, and receives a written apology.",
+ "Hearing scheduled, then rescheduled, then held during a match nobody could miss.",
+ "Ombudsman appointed to investigate the ombudsman. Both report to us."
+];
+
+/* ---------- balance tuning ----------
+   Single place to re-pace the game. Verified with a headless 24h simulation. */
+const RATE_SCALE=2.2;    // output per operation
+const DOC_SCALE=0.55;    // doctrine prices and unlock thresholds
+GENS.forEach(g=>{ g.rate*=RATE_SCALE; });
+UPS.forEach(u=>{ u.cost=Math.round(u.cost*DOC_SCALE);
+  if(u.req.debt!==undefined) u.req.debt=Math.round(u.req.debt*DOC_SCALE); });
+
+/* ---------- state ---------- */
+function freshRun(){
+  return { debt:0, runTotal:0, clicks:0,
+    gens:GENS.map(()=>0), ups:{},
+    rate:0, ratePending:null, unrest:0,
+    revoltEnd:-1, revoltRate:0 };
+}
+function freshGame(){
+  return Object.assign(freshRun(),{
+    t:0, q:0, qAcc:0,
+    assets:0, assetsEarned:0, crisisAssets:0, nodes:{}, caps:{},
+    crises:0, revolts:0, allTime:0, bestRun:0,
+    hiStreak:0, calmStreak:0,
+    f_revolt:0, f_bail:0,
+    dosDone:{}, dosActive:[], dosClaim:{},
+    disp:[], seenDos:false
+  });
+}
+let S=freshGame();
+let buyMode=1;
+
+/* ---------- node effects ---------- */
+const has=id=>!!S.nodes[id];
+function nodeSum(k){ let v=0; for(const n of ALLNODES) if(has(n.id)&&n[k]) v+=n[k]; return v; }
+function nodeProd(k){ let v=1; for(const n of ALLNODES) if(has(n.id)&&n[k]) v*=n[k]; return v; }
+const nodeInc      = ()=>nodeProd("inc");
+const nodeCostMult = ()=>{ let m=1; for(const n of ALLNODES) if(has(n.id)&&n.cost_) m*=(1-n.cost_); return m; };
+const nodeCalm     = ()=>{ let m=1; for(const n of ALLNODES) if(has(n.id)&&n.calm) m*=(1-n.calm); return m; };
+const maxRate      = ()=>has("s2")?35:25;
+const revoltFactor = ()=>has("s4")?0.70:0.40;
+const crisisThresh = ()=>has("s5")?20:35;
+const dosSlots     = ()=>1+nodeSum("slot");
+const dosRewMult   = ()=>(has("i3")?1.5:1)*capDrew();
+const keepOnCrisis  =()=>has("c5")?0.10:0;
+const noLag        = ()=>has("i2");
+
+/* ---------- doctrine effects ---------- */
+function upProd(kind,g){
+  let m=1;
+  for(const u of UPS) if(S.ups[u.id]&&u.kind===kind&&(!g||u.g===g)) m*=u.v;
+  return m;
+}
+const globMult  = ()=>upProd("glob");
+const genMult   = id=>upProd("gen",id);
+const clickMult = ()=>upProd("click");
+const upCalm    = ()=>{ let m=1; for(const u of UPS) if(S.ups[u.id]&&u.kind==="calm") m*=(1-u.v); return m; };
+
+/* ---------- economy ---------- */
+const irMult    = ()=>1+S.rate*0.10;
+const revolting = ()=>S.t < S.revoltEnd;
+function income(){
+  let base=0;
+  GENS.forEach((g,i)=>{ base += S.gens[i]*g.rate*genMult(g.id); });
+  let v=base*globMult()*irMult()*nodeInc()*capInc();
+  if(revolting()) v*=revoltFactor();
+  return v;
+}
+const perClick = ()=>1*clickMult();
+const CALM_FLOOR=0.30;
+const calmTotal = ()=>Math.max(CALM_FLOOR, upCalm()*nodeCalm()*capCalm());
+const unrestPerSec = ()=>S.rate*0.035*calmTotal()-0.18;
+
+function unitCost(i,owned){ return GENS[i].cost*nodeCostMult()*Math.pow(COSTGROW,owned); }
+function bulkCost(i,n){
+  const b=unitCost(i,S.gens[i]);
+  return b*(Math.pow(COSTGROW,n)-1)/(COSTGROW-1);
+}
+function maxAffordable(i){
+  const b=unitCost(i,S.gens[i]);
+  if(S.debt<b) return 0;
+  const n=Math.floor(Math.log(1+S.debt*(COSTGROW-1)/b)/Math.log(COSTGROW));
+  return Math.max(0,n);
+}
+function buyQty(i){
+  if(buyMode==="max") return Math.max(1,maxAffordable(i));
+  return buyMode;
+}
+/* Assets are a function of your BEST cycle, minus what previous collapses
+   already paid out. Collapsing early and often therefore yields nothing —
+   the only way forward is to go deeper than last time. */
+function assetsDeserved(){
+  if(S.runTotal<1.5e6) return 0;
+  return Math.floor(Math.pow(S.runTotal/1e6,0.30)*2.2);
+}
+function crisisYield(){ return Math.max(0, assetsDeserved()-S.crisisAssets); }
+/* On collapse the institution is recapitalised: without this the player would
+   have to hand-click their way out of every prestige, which is the opposite of
+   what this game is for. */
+function startingStake(){ return Math.max(60, 40*Math.sqrt(S.bestRun)); }
+/* runTotal the next collapse must beat before it pays anything at all */
+function nextAssetBar(){ return 1e6*Math.pow((S.crisisAssets+1)/2.2,1/0.30); }
+
+/* ---------- visibility ---------- */
+const genVisible = i => i===0 || S.gens[i-1]>0 || S.allTime>=GENS[i].cost*0.3;
+function upAvailable(u){
+  if(S.ups[u.id]) return false;
+  if(u.req.debt!==undefined) return S.allTime>=u.req.debt;
+  return S.gens[GENS.findIndex(g=>g.id===u.req.gen)]>=u.req.n;
+}
+function upVisible(u){
+  if(S.ups[u.id]) return true;
+  if(u.req.debt!==undefined) return S.allTime>=u.req.debt*0.5;
+  return S.gens[GENS.findIndex(g=>g.id===u.req.gen)]>=Math.ceil(u.req.n*0.5);
+}
+function nodeState(n){
+  if(has(n.id)) return "have";
+  const branch=Object.values(TREE).find(b=>b.nodes.some(x=>x.id===n.id));
+  const idx=branch.nodes.indexOf(n);
+  if(idx>0 && !has(branch.nodes[idx-1].id)) return "lock";
+  return S.assets>=n.cost ? "can" : "wait";
+}
+const dosUnlocked = ()=>S.crises>=1;
+function dosOfferable(){
+  const undone=DOSSIERS.filter(d=>!S.dosDone[d.id]);
+  return undone.slice(0,dosSlots()+2);
+}
+
+/* ---------- actions ---------- */
+const $=s=>document.querySelector(s);
+function gain(n){ S.debt+=n; S.runTotal+=n; S.allTime+=n; if(S.runTotal>S.bestRun) S.bestRun=S.runTotal; }
+function dispatch(txt,cls){
+  S.disp.unshift({q:qName(S.q),t:txt,c:cls||""});
+  if(S.disp.length>60) S.disp.pop();
+}
+
+function doClick(ev){
+  const v=perClick(); gain(v); S.clicks++;
+  const f=document.createElement("div");
+  f.className="float"; f.textContent="+"+money(v);
+  f.style.left=((ev&&ev.clientX)||window.innerWidth*.22)+"px";
+  f.style.top=(((ev&&ev.clientY)||window.innerHeight*.5)-12)+"px";
+  $("#floats").appendChild(f); setTimeout(()=>f.remove(),1150);
+  paint();
+}
+function buyGen(i){
+  let n=buyQty(i);
+  let c=bulkCost(i,n);
+  if(c>S.debt){ n=maxAffordable(i); if(n<1) return; c=bulkCost(i,n); }
+  S.debt-=c; S.gens[i]+=n; dirty();
+}
+function buyUp(u){
+  if(!upAvailable(u)||S.debt<u.cost) return;
+  S.debt-=u.cost; S.ups[u.id]=true; dirty();
+}
+function buyCap(c){
+  const k=capCost(c);
+  if(S.assets<k) return;
+  S.assets-=k; S.caps[c.id]=capLvl(c.id)+1;
+  dispatch(c.name+" — level "+capLvl(c.id)+".","win");
+  dirty();
+}
+function buyNode(n){
+  if(nodeState(n)!=="can") return;
+  S.assets-=n.cost; S.nodes[n.id]=true;
+  dispatch("Pyramid extended — "+n.name+".","win");
+  if(n.maxrate) $("#ir").max=maxRate();
+  dirty();
+}
+
+/* ---------- quarter tick ---------- */
+function endQuarter(){
+  const inc=income();
+  if(S.rate>=16) S.hiStreak++; else S.hiStreak=0;
+  if(S.unrest<25) S.calmStreak++; else S.calmStreak=0;
+  if(S.ratePending!==null){
+    S.rate=S.ratePending; S.ratePending=null;
+    dispatch("Policy meeting concluded — rate set to "+S.rate+"%.","");
+  }
+  S.q++;
+  dispatch("Originated "+money(inc*QSEC)+" · unrest "+S.unrest.toFixed(0)+"% · rate "+S.rate+"%.","");
+  checkDossiers();
+}
+function triggerRevolt(){
+  S.revolts++; S.unrest=58;
+  S.revoltEnd=S.t+QSEC*2;
+  S.revoltRate=S.rate;
+  $("#flash").classList.add("on"); setTimeout(()=>$("#flash").classList.remove("on"),750);
+  dispatch("REVOLT — income cut to "+Math.round(revoltFactor()*100)+"% for two quarters.","evt");
+  showModal("The Streets Have Noticed",
+   "<p>Unrest reached 100%. Windows are out, and somebody has printed your face on a placard with an unkind but accurate likeness.</p>"+
+   "<p style='color:#d92d43'>Income cut to "+Math.round(revoltFactor()*100)+"% for two quarters. Unrest falls back to 58%.</p>"+
+   "<p style='color:#8a8199'>Next time, harvest the anger yourself — engineer the crisis before it engineers you.</p>",
+   [{t:"Deny Everything",f:closeModal}]);
+}
+function endRevolt(){
+  if(S.rate>=S.revoltRate && S.revoltRate>0) S.f_revolt=1;
+  S.revoltEnd=-1;
+  dispatch("Order restored. No individual was named.","");
+}
+
+/* ---------- dossiers ---------- */
+function acceptDos(d){
+  if(S.dosActive.length>=dosSlots()||S.dosActive.includes(d.id)) return;
+  S.dosActive.push(d.id);
+  dispatch("Dossier opened — "+d.name+".","");
+  dirty();
+}
+function checkDossiers(){
+  for(const id of S.dosActive){
+    const d=DOSSIERS.find(x=>x.id===id);
+    if(d.cur()>=d.need) S.dosClaim[id]=true;
+  }
+}
+function claimDos(d){
+  if(!S.dosClaim[d.id]) return;
+  const rw=Math.max(1,Math.round(d.rew*dosRewMult()));
+  S.assets+=rw; S.assetsEarned+=rw;
+  S.dosDone[d.id]=true;
+  delete S.dosClaim[d.id];
+  S.dosActive=S.dosActive.filter(x=>x!==d.id);
+  dispatch("Dossier closed — "+d.name+" · +"+rw+" Assets.","win");
+  showModal("Dossier Closed — "+d.name,
+    "<p>"+d.bd+"</p><p style='color:#ffe58a'>Seized Assets acquired: "+rw+"</p>"+
+    "<p style='color:#8a8199'>Spend them in The Pyramid. Nothing you build there can be taken by a collapse.</p>",
+    [{t:"File It",f:closeModal}]);
+  dirty();
+}
+
+/* ---------- crisis ---------- */
+function doCrisis(){
+  const y=crisisYield();
+  if(S.unrest<crisisThresh()||y<1) return;
+  const inc=income();
+  showModal("Engineer a Crisis?",
+   "<p>You pull the liquidity, call the loans, and let the arrangement fall over in a direction chosen well in advance.</p>"+
+   "<p>Seized on collapse: <b style='color:#ffe58a'>"+fmt(y)+" Assets</b>"+
+   (dosRewMult()>1?"":"")+"</p>"+
+   "<p style='color:#8a8199'>Assets are paid on your best cycle, not per collapse — the next one must go deeper than this to pay again.</p>"+
+   "<p style='color:#d92d43'>Wipes: debt, every operation"+(keepOnCrisis()?" (you retain 10%)":"")+
+   ", every doctrine, your rate and your unrest. The Pyramid and your dossiers survive.</p>",
+   [{t:"Not Yet",f:closeModal},{t:"Let It Fall",f:()=>{
+      if(inc>=4e6) S.f_bail=1;
+      S.assets+=y; S.assetsEarned+=y; S.crisisAssets+=y; S.crises++;
+      const kept=keepOnCrisis()?S.gens.map(v=>Math.floor(v*keepOnCrisis())):GENS.map(()=>0);
+      const carry={t:S.t,q:S.q,qAcc:S.qAcc,assets:S.assets,assetsEarned:S.assetsEarned,crisisAssets:S.crisisAssets,nodes:S.nodes,caps:S.caps,
+        crises:S.crises,revolts:S.revolts,allTime:S.allTime,bestRun:S.bestRun,hiStreak:0,calmStreak:0,
+        f_revolt:S.f_revolt,f_bail:S.f_bail,dosDone:S.dosDone,dosActive:S.dosActive,dosClaim:S.dosClaim,
+        disp:S.disp,seenDos:S.seenDos};
+      S=Object.assign(freshRun(),carry);
+      S.gens=kept;
+      S.debt=startingStake();
+      $("#ir").value=0; $("#ir").max=maxRate();
+      dispatch("CRISIS ENGINEERED — "+fmt(y)+" Assets seized from the wreckage.","evt");
+      checkDossiers(); closeModal(); dirty();
+   }}]);
+}
+
+/* ---------- modal / save ---------- */
+function showModal(title,html,btns){
+  $("#card").innerHTML="<h2>"+title+"</h2>"+html+"<div class='row'>"+
+    btns.map((b,i)=>"<button class='hbtn' data-b='"+i+"'>"+b.t+"</button>").join("")+"</div>";
+  $("#card").querySelectorAll("[data-b]").forEach(el=>el.onclick=()=>btns[+el.dataset.b].f());
+  $("#modal").classList.add("on");
+}
+const closeModal=()=>$("#modal").classList.remove("on");
+function exportSave(){
+  const str=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  showModal("Export Ledger","<p>Copy this. It is the only record, and there is no other record.</p>"+
+    "<textarea id='sv' readonly>"+str+"</textarea>",[{t:"Close",f:closeModal}]);
+  setTimeout(()=>{const t=$("#sv");if(t){t.focus();t.select();}},60);
+}
+function importSave(){
+  showModal("Import Ledger","<p>Paste a ledger string. Current progress is overwritten without ceremony.</p>"+
+    "<textarea id='sv' placeholder='paste here'></textarea>",
+    [{t:"Cancel",f:closeModal},{t:"Restore",f:()=>{
+      try{
+        const o=JSON.parse(decodeURIComponent(escape(atob($("#sv").value.trim()))));
+        if(typeof o.debt!=="number"||!Array.isArray(o.gens)) throw 0;
+        S=Object.assign(freshGame(),o);
+        while(S.gens.length<GENS.length) S.gens.push(0);
+        $("#ir").max=maxRate(); $("#ir").value=S.ratePending!==null?S.ratePending:S.rate;
+        saveGame(); closeModal(); dirty();
+      }catch(e){ showModal("Unreadable",
+        "<p>That ledger cannot be parsed. Possibly forged. Possibly by you.</p>",[{t:"Close",f:closeModal}]); }
+    }}]);
+}
+
+/* ---------- rendering ---------- */
+let keys={}, force=false;
+const dirty=()=>{keys={};force=true;paint();};
+function panel(id,key,build){
+  if(keys[id]===key&&!force) return false;
+  keys[id]=key; $("#p"+id).innerHTML=build(); return true;
+}
+
+function paint(){
+  const inc=income();
+  $("#debt").textContent=money(S.debt);
+  $("#rate").innerHTML=(revolting()?"⚠ ":"+")+fmt(inc)+" /sec &nbsp;<b>"+money(inc*QSEC)+" /quarter</b>";
+  $("#rate").style.color=revolting()?"#d92d43":"var(--green)";
+  $("#signSub").textContent="+"+money(perClick())+" per signature";
+  $("#qLbl").textContent=qName(S.q);
+  $("#qBar").style.width=(S.qAcc/QSEC*100)+"%";
+
+  const shown=S.ratePending!==null?S.ratePending:S.rate;
+  $("#irLbl").innerHTML=S.rate+"%"+(S.ratePending!==null&&S.ratePending!==S.rate?
+    " <span class='pend'>→ "+S.ratePending+"%</span>":"");
+  $("#irHint").innerHTML="Yield ×"+irMult().toFixed(2)+" · unrest "+(unrestPerSec()>=0?"+":"")+
+    unrestPerSec().toFixed(2)+"/s"+
+    (S.ratePending!==null&&S.ratePending!==S.rate?
+      "<br><span class='pend'>Pending — takes effect at "+qName(S.q+1)+".</span>":
+      (noLag()?"<br>Advance Notice: changes apply immediately.":"<br>Changes take effect at the next quarter."))
+    + (unrestPerSec()<=0&&S.rate>=maxRate()-1?"<br><span style='color:#d92d43'>Even at the ceiling this rate cannot anger anyone. No crisis can be staged.</span>":"");
+
+  const u=Math.max(0,Math.min(100,S.unrest));
+  $("#unLbl").textContent=u.toFixed(0)+"%";
+  $("#unBar").style.width=u+"%";
+  $("#unMeter").classList.toggle("hot",u>=80);
+  $("#unHint").textContent = u<15?"The public is docile. Raise rates.":
+    u<40?"Grumbling on the radio. Nothing structural.":
+    u<70?"Placards, op-eds, an unhelpful number of torches.":
+    u<90?"Boards on the windows. Consider harvesting this.":
+         "One more point and they come for the building.";
+
+  const y=crisisYield(), th=crisisThresh();
+  const cb=$("#crisis");
+  cb.disabled=!(S.unrest>=th&&y>=1);
+  cb.textContent = y<1 ? "Crisis Not Worth Staging" :
+    S.unrest<th ? "Engineer a Crisis — needs "+th+"% unrest" :
+    "Engineer a Crisis  ▸  +"+fmt(y)+" Assets";
+  $("#cHint").innerHTML = y>=1
+    ? (S.unrest>=th?"Ready. The wreckage is worth "+fmt(y)+" Assets."
+                   :"Worth "+fmt(y)+" Assets, but unrest must reach "+th+"% first.")
+    : "This cycle must originate "+money(nextAssetBar())+" before a collapse pays anything. "+
+      "You are at "+money(S.runTotal)+".";
+
+  $("#assetBox").style.display=S.assetsEarned>0?"":"none";
+  $("#asLbl").textContent=fmt(S.assets)+(S.assetsEarned>S.assets?" / "+fmt(S.assetsEarned)+" earned":"");
+
+  const dosTab=document.querySelector('.tab[data-p="Dos"]');
+  dosTab.classList.toggle("off",!dosUnlocked());
+  $("#dOps").style.display=GENS.some((g,i)=>genVisible(i)&&S.debt>=bulkCost(i,1))?"inline-block":"none";
+  $("#dDoc").style.display=UPS.some(x=>upAvailable(x)&&S.debt>=x.cost)?"inline-block":"none";
+  $("#dDos").style.display=(dosUnlocked()&&(Object.keys(S.dosClaim).length||
+    (S.dosActive.length<dosSlots()&&dosOfferable().some(d=>!S.dosActive.includes(d.id)))))?"inline-block":"none";
+  $("#dPyr").style.display=ALLNODES.some(n=>nodeState(n)==="can")?"inline-block":"none";
+
+  renderOps(); renderDoc(); renderDos(); renderPyr(); renderLed();
+  force=false;
+}
+
+function renderOps(){
+  const vis=GENS.map((g,i)=>i).filter(genVisible);
+  const key=vis.join()+"|"+S.gens.join()+"|"+Object.keys(S.ups).join()+"|"+buyMode+"|"+Object.keys(S.nodes).join();
+  panel("Ops",key,()=>
+    "<div class='paneHead'><div class='sect'>Instruments of Origination</div><div class='mults'>"+
+    [1,10,100,"max"].map(m=>"<button class='mult"+(buyMode===m?" on":"")+"' data-m='"+m+"'>"+
+      (m==="max"?"MAX":"×"+m)+"</button>").join("")+"</div></div>"+
+    vis.map(i=>{
+      const g=GENS[i], each=g.rate*genMult(g.id);
+      return "<div class='item' data-g='"+i+"'><div class='sig'>"+g.sig+"</div>"+
+        "<div><div class='nm'>"+g.name+"</div><div class='ds'>"+g.ds+"</div>"+
+        "<div class='rt'>"+fmt(each)+"/s each"+(S.gens[i]?" · "+fmt(each*S.gens[i])+"/s total":"")+"</div></div>"+
+        "<div class='buy'><div class='cost' id='gc"+i+"'></div><div class='cnt' id='gn"+i+"'></div></div></div>";
+    }).join("")
+  );
+  const p=$("#pOps");
+  p.querySelectorAll("[data-g]").forEach(el=>el.onclick=()=>buyGen(+el.dataset.g));
+  p.querySelectorAll("[data-m]").forEach(el=>el.onclick=()=>{
+    buyMode=el.dataset.m==="max"?"max":+el.dataset.m; dirty();
+  });
+  vis.forEach(i=>{
+    const n=buyQty(i), c=bulkCost(i,n);
+    const ce=document.getElementById("gc"+i), ne=document.getElementById("gn"+i);
+    if(ce){ ce.textContent=money(c); ce.className="cost"+(S.debt<c?" no":""); }
+    if(ne) ne.textContent=(buyMode==="max"?"buy "+n+" · ":"×"+n+" · ")+"owned "+S.gens[i];
+  });
+}
+
+function renderDoc(){
+  const vis=UPS.filter(upVisible);
+  const key=vis.map(u=>u.id+(S.ups[u.id]?1:0)+(upAvailable(u)?"a":"l")).join();
+  panel("Doc",key,()=>{
+    if(!vis.length) return "<div class='empty'>No doctrine has been revealed to you yet.<br>Originate more debt — the Eye is watching your volume.</div>";
+    const own=vis.filter(u=>S.ups[u.id]), av=vis.filter(u=>!S.ups[u.id]);
+    const reqTxt=u=>u.req.debt!==undefined?"requires "+money(u.req.debt)+" originated all-time":
+      "requires "+u.req.n+"× "+GENS.find(g=>g.id===u.req.gen).name;
+    return (av.length?"<div class='paneHead'><div class='sect'>Available Doctrines</div></div>"+av.map(u=>{
+        const lock=!upAvailable(u);
+        return "<div class='item"+(lock?" locked":"")+"' data-u='"+u.id+"'><div class='sig'>"+u.sig+"</div>"+
+          "<div><div class='nm'>"+u.name+"</div><div class='ds'>"+u.ds+"</div>"+
+          (lock?"<div class='rt' style='color:#8a8199'>Sealed — "+reqTxt(u)+"</div>":"")+"</div>"+
+          "<div class='buy'><div class='cost' id='uc_"+u.id+"'></div></div></div>";
+      }).join(""):"")+
+      (own.length?"<div class='paneHead' style='margin-top:14px'><div class='sect'>Doctrines Enacted ("+own.length+")</div></div>"+
+        own.map(u=>"<div class='item owned'><div class='sig'>"+u.sig+"</div><div><div class='nm'>"+u.name+
+        "</div><div class='ds'>"+u.ds+"</div></div><div class='buy'><div class='cnt' style='color:var(--green)'>enacted</div></div></div>").join(""):"");
+  });
+  $("#pDoc").querySelectorAll("[data-u]").forEach(el=>
+    el.onclick=()=>buyUp(UPS.find(x=>x.id===el.dataset.u)));
+  vis.forEach(u=>{
+    const el=document.getElementById("uc_"+u.id);
+    if(el){ el.textContent=money(u.cost); el.className="cost"+(S.debt<u.cost?" no":""); }
+  });
+}
+
+function renderDos(){
+  const off=dosOfferable();
+  const key=Object.keys(S.dosDone).join()+"|"+S.dosActive.join()+"|"+Object.keys(S.dosClaim).join()+
+            "|"+dosSlots()+"|"+off.map(d=>d.id+Math.min(1,d.cur()/d.need).toFixed(2)).join();
+  panel("Dos",key,()=>{
+    if(!dosUnlocked()) return "<div class='empty'>The Dossier Room is sealed.<br><br>"+
+      "It opens after your first engineered crisis. Until you have demonstrably<br>"+
+      "collapsed something on purpose, nobody upstairs will show you the files.</div>";
+    const done=DOSSIERS.filter(d=>S.dosDone[d.id]);
+    let h="<div class='paneHead'><div class='sect'>Open Files — "+S.dosActive.length+" / "+dosSlots()+" slots</div></div>";
+    const act=S.dosActive.map(id=>DOSSIERS.find(d=>d.id===id));
+    if(!act.length) h+="<div class='empty' style='padding:10px'>No file is open. Accept one below.</div>";
+    h+=act.map(d=>dosCard(d,"act")).join("");
+    const avail=off.filter(d=>!S.dosActive.includes(d.id));
+    if(avail.length) h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Available Files</div></div>"+
+      avail.map(d=>dosCard(d,"")).join("");
+    if(done.length) h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Closed ("+done.length+" / "+DOSSIERS.length+")</div></div>"+
+      done.map(d=>"<div class='dos done'><div class='code'>"+d.code+"</div><div class='ti'>"+d.name+
+        "</div><div class='goal'>Closed · +"+Math.max(1,Math.round(d.rew*dosRewMult()))+" Assets</div></div>").join("");
+    return h;
+  });
+  $("#pDos").querySelectorAll("[data-acc]").forEach(el=>
+    el.onclick=()=>acceptDos(DOSSIERS.find(d=>d.id===el.dataset.acc)));
+  $("#pDos").querySelectorAll("[data-cl]").forEach(el=>
+    el.onclick=()=>claimDos(DOSSIERS.find(d=>d.id===el.dataset.cl)));
+}
+function dosCard(d,cls){
+  const active=cls==="act", pr=Math.min(1,d.cur()/d.need), ready=!!S.dosClaim[d.id];
+  const full=S.dosActive.length>=dosSlots();
+  return "<div class='dos "+cls+"'><div class='code'>"+d.code+"</div><div class='ti'>"+d.name+"</div>"+
+    "<div class='bd'>"+d.bd+"</div>"+
+    "<div class='goal'>▸ "+d.goal+(active?"  ("+fmt(Math.min(d.cur(),d.need))+" / "+d.need+")":"")+"</div>"+
+    "<div class='rew'>Reward: "+Math.max(1,Math.round(d.rew*dosRewMult()))+" Seized Assets</div>"+
+    "<div class='foot'>"+
+      (active?"<div class='pbar'><i style='width:"+(pr*100)+"%'></i></div>"+
+        "<button class='dbtn"+(ready?" claim":"")+"' data-cl='"+d.id+"' "+(ready?"":"disabled")+">"+
+        (ready?"Close File":"In Progress")+"</button>"
+      :"<div class='pbar'></div><button class='dbtn' data-acc='"+d.id+"' "+(full?"disabled":"")+">"+
+        (full?"No Slot":"Open File")+"</button>")+
+    "</div></div>";
+}
+
+function renderPyr(){
+  const key=Object.keys(S.nodes).join()+"|"+S.assets+"|"+CAPS.map(c=>capLvl(c.id)).join();
+  panel("Pyr",key,()=>{
+    let h="<div class='paneHead'><div class='sect'>The Pyramid — "+fmt(S.assets)+
+      " Assets unspent</div></div>"+
+      "<div class='ds' style='margin:-4px 0 12px'>Assets come from engineered crises and closed dossiers. "+
+      "Branches must be built in order, bottom to top. Nothing here is ever lost.</div>"+
+      "<div id='treeWrap'><div class='treeGrid'>";
+    const bs=Object.values(TREE);
+    h+=bs.map(b=>"<div class='branchHead'>"+b.sig+" &nbsp;"+b.name+"</div>").join("");
+    for(let tier=0;tier<5;tier++){
+      if(tier>0) h+=bs.map(b=>"<div class='link"+(has(b.nodes[tier].id)?" on":"")+"'><i></i></div>").join("");
+      h+=bs.map(b=>{
+        const n=b.nodes[tier], st=nodeState(n);
+        return "<div class='node "+st+"' data-n='"+n.id+"'><div class='nn'>"+n.name+"</div>"+
+          "<div class='nd'>"+n.nd+"</div><div class='nc'>"+(st==="have"?"✓ built":fmt(n.cost)+" Assets")+"</div></div>";
+      }).join("");
+    }
+    h+="</div></div>";
+    h+="<div class='paneHead' style='margin-top:20px'><div class='sect'>The Capstone — repeatable</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>Once the branches are built, the pyramid simply gets taller. "+
+      "These never run out and never reset.</div>"+
+      CAPS.map(c=>{
+        const k=capCost(c), can=S.assets>=k;
+        return "<div class='item"+(can?"":" locked")+"' data-c='"+c.id+"'><div class='sig'>▲</div>"+
+          "<div><div class='nm'>"+c.name+"</div><div class='ds'>"+c.nd+"</div>"+
+          "<div class='rt'>level "+capLvl(c.id)+"</div></div>"+
+          "<div class='buy'><div class='cost"+(can?"":" no")+"'>"+fmt(k)+" Assets</div></div></div>";
+      }).join("");
+    return h;
+  });
+  $("#pPyr").querySelectorAll("[data-n]").forEach(el=>
+    el.onclick=()=>buyNode(ALLNODES.find(n=>n.id===el.dataset.n)));
+  $("#pPyr").querySelectorAll("[data-c]").forEach(el=>
+    el.onclick=()=>buyCap(CAPS.find(c=>c.id===el.dataset.c)));
+}
+
+function renderLed(){
+  const key=S.q+"|"+S.disp.length+"|"+Object.keys(S.ups).length+"|"+Object.keys(S.nodes).length+"|"+S.crises;
+  panel("Led",key,()=>
+    "<div class='paneHead'><div class='sect'>Position</div></div>"+
+    "<div class='stat'><span>Fiscal period</span><b>"+qName(S.q)+"</b></div>"+
+    "<div class='stat'><span>Originated this cycle</span><b>"+money(S.runTotal)+"</b></div>"+
+    "<div class='stat'><span>Originated all time</span><b>"+money(S.allTime)+"</b></div>"+
+    "<div class='stat'><span>Crises engineered</span><b>"+S.crises+"</b></div>"+
+    "<div class='stat'><span>Revolts endured</span><b>"+S.revolts+"</b></div>"+
+    "<div class='stat'><span>Assets unspent / earned</span><b>"+fmt(S.assets)+" / "+fmt(S.assetsEarned)+"</b></div>"+
+    "<div class='stat'><span>Doctrines enacted</span><b>"+Object.keys(S.ups).length+" / "+UPS.length+"</b></div>"+
+    "<div class='stat'><span>Pyramid nodes built</span><b>"+Object.keys(S.nodes).length+" / "+ALLNODES.length+"</b></div>"+
+    "<div class='stat'><span>Capstone levels</span><b>"+CAPS.reduce((a,c)=>a+capLvl(c.id),0)+"</b></div>"+
+    "<div class='stat'><span>Dossiers closed</span><b>"+Object.keys(S.dosDone).length+" / "+DOSSIERS.length+"</b></div>"+
+    "<div class='paneHead' style='margin-top:16px'><div class='sect'>Multipliers</div></div>"+
+    "<div class='stat'><span>Doctrines</span><b>×"+globMult().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Pyramid</span><b>×"+nodeInc().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Capstone tranches</span><b>×"+capInc().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Policy rate</span><b>×"+irMult().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Operation costs</span><b>×"+nodeCostMult().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Unrest dampening</span><b>×"+calmTotal().toFixed(2)+
+      (upCalm()*nodeCalm()*capCalm()<CALM_FLOOR?" (floored)":"")+"</b></div>"+
+    "<div class='paneHead' style='margin-top:16px'><div class='sect'>Dispatches</div></div>"+
+    (S.disp.length?S.disp.map(d=>"<div class='disp "+d.c+"'><b>"+d.q+"</b> — "+d.t+"</div>").join("")
+      :"<div class='empty'>Nothing has happened yet.</div>")+
+    "<div class='ds' style='margin-top:16px;line-height:1.9'>Progress saves automatically in this browser "+
+    "every ten seconds. Use <b style='color:var(--gold)'>Export</b> to carry the ledger to another machine — "+
+    "the Eye keeps no backups of its own, on principle.</div>"
+  );
+}
+
+/* ---------- persistence ----------
+   The Claude-artifact build cannot touch browser storage; this web build can,
+   so the ledger saves itself and the machine keeps working while you are away. */
+const SAVE_KEY="debtmaster_v02";
+const OFFLINE_CAP=12*3600;   // seconds of away-time credited
+const OFFLINE_RATE=0.60;     // at 60% efficiency
+
+function saveGame(){
+  try{
+    const blob=Object.assign({},S,{savedAt:Date.now(),ver:2});
+    localStorage.setItem(SAVE_KEY,btoa(unescape(encodeURIComponent(JSON.stringify(blob)))));
+    return true;
+  }catch(e){ return false; }
+}
+function loadGame(){
+  let raw=null;
+  try{ raw=localStorage.getItem(SAVE_KEY); }catch(e){ return false; }
+  if(!raw) return false;
+  try{
+    const o=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if(typeof o.debt!=="number"||!Array.isArray(o.gens)) return false;
+    const savedAt=o.savedAt; delete o.savedAt; delete o.ver;
+    S=Object.assign(freshGame(),o);
+    while(S.gens.length<GENS.length) S.gens.push(0);
+    S.revoltEnd=-1;
+    if(savedAt) creditOffline((Date.now()-savedAt)/1000);
+    return true;
+  }catch(e){ return false; }
+}
+function creditOffline(sec){
+  if(!(sec>60)) return;
+  const dt=Math.min(sec,OFFLINE_CAP);
+  const earned=income()*dt*OFFLINE_RATE;
+  if(earned<=0) return;
+  gain(earned);
+  S.t+=dt;
+  // advance the calendar silently — no need for 300 dispatch lines
+  const qs=Math.floor((S.qAcc+dt)/QSEC); S.q+=qs; S.qAcc=(S.qAcc+dt)%QSEC;
+  if(S.ratePending!==null&&qs>0){ S.rate=S.ratePending; S.ratePending=null; }
+  // never let an absence detonate straight into a revolt
+  S.unrest=Math.max(0,Math.min(80,S.unrest+unrestPerSec()*dt));
+  const h=Math.floor(dt/3600), m=Math.round(dt%3600/60);
+  dispatch("Unattended for "+(h?h+"h ":"")+m+"m — "+money(earned)+" originated in your absence.","win");
+  pendingOffline={txt:(h?h+" hours ":"")+m+" minutes", earned:earned, capped:sec>OFFLINE_CAP};
+}
+let pendingOffline=null;
+function showOffline(){
+  if(!pendingOffline) return;
+  const o=pendingOffline; pendingOffline=null;
+  showModal("The Desk Was Not Empty",
+    "<p>You were away "+o.txt+". Nobody stopped originating. Nobody was asked to.</p>"+
+    "<p style='color:#ffe58a'>"+money(o.earned)+" added to the book"+
+    " <span style='color:#8a8199'>(absence is credited at "+Math.round(OFFLINE_RATE*100)+"%"+
+    (o.capped?", capped at "+(OFFLINE_CAP/3600)+" hours":"")+")</span></p>",
+    [{t:"Naturally",f:closeModal}]);
+}
+function wipeSave(){
+  showModal("Dissolve the Institution?",
+    "<p>This erases your save in this browser: the Pyramid, every dossier, every Seized Asset. There is no recovery, and there is no appeal.</p>",
+    [{t:"Cancel",f:closeModal},{t:"Dissolve Everything",f:()=>{
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      S=freshGame(); $("#ir").max=maxRate(); $("#ir").value=0;
+      dispatch("Institution refounded. Regulator informed. Regulator unconcerned.","");
+      closeModal(); dirty();
+    }}]);
+}
+setInterval(saveGame,10000);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveGame(); });
+window.addEventListener("beforeunload",saveGame);
+window.addEventListener("pagehide",saveGame);
+
+/* ---------- main loop (interval-based so it survives a hidden tab) ---------- */
+let lastT=performance.now();
+function tick(){
+  const now=performance.now();
+  let dt=(now-lastT)/1000; lastT=now;
+  if(dt>60) dt=60;                      // cap absurd jumps
+  S.t+=dt;
+  gain(income()*dt);
+  S.unrest=Math.max(0,Math.min(100,S.unrest+unrestPerSec()*dt));
+  if(S.unrest>=100&&!revolting()) triggerRevolt();
+  if(S.revoltEnd>0&&S.t>=S.revoltEnd) endRevolt();
+  S.qAcc+=dt;
+  while(S.qAcc>=QSEC){ S.qAcc-=QSEC; endQuarter(); }
+  checkDossiers();
+}
+setInterval(tick,100);
+setInterval(paint,160);
+
+/* ---------- wiring ---------- */
+$("#sign").addEventListener("click",doClick);
+$("#ir").addEventListener("input",e=>{
+  const v=+e.target.value;
+  if(noLag()){ S.rate=v; S.ratePending=null; } else S.ratePending=v;
+  paint();
+});
+$("#crisis").addEventListener("click",doCrisis);
+$("#btnSave").addEventListener("click",exportSave);
+$("#btnLoad").addEventListener("click",importSave);
+$("#btnWipe").addEventListener("click",wipeSave);
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  if(t.dataset.p==="Dos"&&!dosUnlocked()) return;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+  t.classList.add("on"); $("#p"+t.dataset.p).classList.add("on");
+});
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space"&&!$("#modal").classList.contains("on")){ e.preventDefault(); doClick(); }
+});
+
+/* ticker: duration derived from text width so it stays readable */
+(function(){
+  const el=$("#tick");
+  el.textContent=HEADLINES.slice().sort(()=>Math.random()-.5).join("   ✦   ")+"   ✦   ";
+  requestAnimationFrame(()=>{
+    const w=el.scrollWidth||4000;
+    el.style.animationDuration=Math.round(w/58)+"s";   // ~58 px/sec
+  });
+})();
+
+/* ---------- boot ---------- */
+const returning=loadGame();
+$("#ir").max=maxRate();
+$("#ir").value=(S.ratePending!==null?S.ratePending:S.rate);
+if(!returning) dispatch("Institution founded. Regulator informed. Regulator unconcerned.","");
+if(returning) $("#intro").classList.add("gone");
+$("#begin").addEventListener("click",()=>{ $("#intro").classList.add("gone"); saveGame(); });
+setTimeout(showOffline,700);
+dirty();
+</script>
+</body>
+</html>
