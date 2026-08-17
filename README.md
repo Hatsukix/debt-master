@@ -5,7 +5,7 @@ You create debt the way other people grow tomatoes, you sell insurance that cove
 nothing, you raise rates at the worst possible moment — and when the anger becomes
 unmanageable, you schedule the collapse yourself.
 
-**Play it:** https://USERNAME.github.io/debt-master/
+**Play it:** https://hatsukix.github.io/debt-master/
 
 ---
 
