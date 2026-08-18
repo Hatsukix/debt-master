@@ -664,6 +664,56 @@ const DOSSIERS=[
   goal:"Engineer 4 crises in total", cur:()=>S.crises, need:4}
 ];
 
+/* ---------- endless content ----------
+   The ten dossiers and the fifteen Pyramid nodes both end. What follows them
+   has to keep the tab alive without inventing new systems. */
+const COLD_NAMES=["The Dormant File","A Matter Never Closed","The Second Envelope",
+ "An Irregularity, Historic","The Unreturned Call","A Question Taken in Writing",
+ "The Adjourned Session","An Item Under Any Other Business"];
+const COLD_BODIES=[
+ "The file was opened, then reassigned, then reassigned again, and the third officer retired. Nobody has formally closed it, because formally closing it would require reading it.",
+ "A journalist requested the documents under freedom of information. Two thousand pages arrived, correctly numbered, in an order chosen by nobody and reproducible by no one.",
+ "The committee resolved to look into it at the next session. The next session resolved to look into it at the session after that. This has now happened eleven times.",
+ "An internal review found no evidence of wrongdoing, having been scoped, by the party under review, to exclude the period in question.",
+ "The regulator wrote asking for clarification. The reply clarified that a reply had been sent. The matter was recorded as resolved by correspondence.",
+ "A former employee has been talking. He is described in the note as disgruntled, which is accurate, and as unreliable, which is the part that had to be arranged.",
+ "The minutes record a decision that nobody remembers taking. The decision has been implemented, so the minutes are presumed correct.",
+ "It appears under Any Other Business, at the end of a four-hour agenda, in a room where the catering has already been cleared."
+];
+function coldCase(n){
+  const gi=(n-1)%GENS.length, g=GENS[gi], need=70+35*n;
+  return {id:"cold_"+n, cold:true, code:"COLD CASE "+String(n).padStart(2,"0"),
+    name:COLD_NAMES[(n-1)%COLD_NAMES.length],
+    bd:COLD_BODIES[(n-1)%COLD_BODIES.length],
+    rew:Math.max(14,Math.round(14*Math.pow(1.4,n-1))),
+    goal:"Own "+need+" × "+g.name, cur:()=>S.gens[gi], need:need};
+}
+/* The real dossiers, then as many cold cases as the player needs, forever. */
+function allDos(){
+  const list=DOSSIERS.slice();
+  if(DOSSIERS.every(d=>S.dosDone[d.id])){
+    const n=S.coldDone||0;
+    for(let i=1;i<=4;i++) list.push(coldCase(n+i));
+  }
+  return list;
+}
+const findDos=id=>allDos().find(d=>d.id===id);
+
+/* Doctrines run out too. Reaffirming them does not. */
+const REAFF={base:1e9, grow:2.4, mult:1.14};
+const reaffLvl =()=>S.reaff||0;
+const reaffCost=()=>Math.max(1e6, income()*QSEC*8*Math.pow(REAFF.grow,reaffLvl()));
+const reaffMult=()=>Math.pow(REAFF.mult,reaffLvl());
+function buyReaff(){
+  const c=reaffCost();
+  if(S.debt<c||!UPS.every(u=>S.ups[u.id])) return;
+  S.debt-=c; S.reaff=reaffLvl()+1;
+  dispatch("The doctrines have been reaffirmed for the "+reaffLvl()+ordinal(reaffLvl())+" time.","win");
+  dirty();
+}
+const ordinal=n=>{const a=n%10,b=n%100;
+  return (a===1&&b!==11)?"st":(a===2&&b!==12)?"nd":(a===3&&b!==13)?"rd":"th";};
+
 const HEADLINES=[
  "Central bank denies existence of the basement. Basement denies existence of the central bank.",
  "Nine of ten economists endorse the framework; tenth economist unreachable, last seen near Denver.",
@@ -747,10 +797,81 @@ function buyHaven(h){
   dirty();
 }
 
-/* Chapters used to open on crisis COUNT alone, which fought the economy: the
-   game rewards fewer, larger collapses, so a strong player could build the whole
-   Pyramid and still be stuck on chapter II. Each chapter now has independent
-   routes and any one of them opens it. */
+/* ==========================================================================
+   THE CHAIN
+   Every system is opened by a milestone inside the system before it, so the
+   game reads as one line rather than eight things all keyed to the same
+   counter. Nothing is shown before it can be played, and once opened a stage
+   never closes again within an era.
+   ========================================================================== */
+const CHAIN=[
+ {id:"ops",tab:"Ops",name:"Operations",from:null,
+  test:()=>true, have:()=>1, need:()=>1, txt:()=>"available from the first day"},
+ {id:"doc",tab:"Doc",name:"Doctrines",from:"Operations",
+  have:()=>S.gens.reduce((a,b)=>a+b,0), need:()=>gscale(3),
+  txt:()=>"own "+gscale(3)+" instruments of origination"},
+ {id:"dos",tab:"Dos",name:"Dossiers",from:"Doctrines",
+  have:()=>Object.keys(S.ups).length, need:()=>gscale(6),
+  txt:()=>"enact "+gscale(6)+" doctrines"},
+ {id:"pyr",tab:"Pyr",name:"The Pyramid",from:"Dossiers",
+  have:()=>Object.keys(S.dosDone).length, need:()=>gscale(2),
+  txt:()=>"close "+gscale(2)+" dossiers"},
+ {id:"mkt",tab:"Mkt",name:"The Trading Floor",from:"The Pyramid",
+  have:()=>Object.keys(S.nodes).length, need:()=>gscale(5),
+  txt:()=>"build "+gscale(5)+" nodes of the Pyramid"},
+ {id:"tok",tab:"Tok",name:"The Token",from:"The Trading Floor",
+  have:()=>worldPct()*100, need:()=>gscale(25), pct:true,
+  txt:()=>"own "+gscale(25)+"% of world equity"},
+ {id:"war",tab:"War",name:"Conflicts",from:"The Token",
+  have:()=>tok().gen, need:()=>gscale(2),
+  txt:()=>"launch "+gscale(2)+" token generations"},
+ {id:"ref",tab:"Ref",name:"Monetary Reform",from:"Conflicts",
+  have:()=>Object.keys(war().won).length, need:()=>gscale(4),
+  txt:()=>"win "+gscale(4)+" conflicts"}
+];
+/* The Charter clause that used to halve crisis counts now eases the whole chain. */
+const gscale=n=>Math.max(1,Math.ceil(n*(hasCh("standing")?0.5:1)));
+const stage=id=>CHAIN.find(c=>c.id===id);
+function stageReady(id){ const c=stage(id); return c.test?c.test():c.have()>=c.need(); }
+const stageOpen=id=>!!(S.unlocked&&S.unlocked[id]) || id==="ops";
+/* Latch: a dip in a counter must never take a tab away again. */
+function refreshUnlocks(){
+  if(!S.unlocked) S.unlocked={};
+  const opened=[];
+  for(const c of CHAIN){
+    if(S.unlocked[c.id]) continue;
+    const prevOpen=!c.from || stageOpen(CHAIN[CHAIN.indexOf(c)-1].id);
+    if(prevOpen && stageReady(c.id)){
+      S.unlocked[c.id]=true;
+      if(c.id!=="ops") opened.push(c);
+    }
+  }
+  if(!opened.length) return;
+  opened.forEach(c=>dispatch("UNLOCKED — "+c.name+".","win"));
+  /* Loading a mature save catches the whole chain up in one pass. Seven modals
+     in a row is not a celebration, it is a queue. */
+  if(opened.length>1){
+    showModal("Catching Up",
+      "<p>Your position already satisfies several stages of the chain, so they have all opened at once:</p>"+
+      "<p style='color:#4fd18b'>"+opened.map(c=>c.name).join("<br>")+"</p>"+
+      "<p style='color:#8a8199'>From here they open one at a time, each from a milestone in the one before it.</p>",
+      [{t:"Proceed",f:closeModal}]);
+  } else {
+    const c=opened[0];
+    showModal(c.name+" Is Open",
+      "<p>Your work in <b>"+c.from+"</b> has opened it.</p>"+
+      "<p style='color:#8a8199'>A new tab has appeared. Nothing here is offered before it can be used, "+
+      "and nothing that opens ever closes again — until you reissue the currency, at which point "+
+      "everything closes at once.</p>",
+      [{t:"Proceed",f:closeModal}]);
+  }
+}
+function nextStage(){ return CHAIN.find(c=>!stageOpen(c.id)) || null; }
+function stageProgress(c){
+  const h=c.have(), n=c.need();
+  return (c.pct? h.toFixed(1)+"% / "+n+"%" : fmt(Math.min(h,n))+" / "+fmt(n))+" — "+c.txt();
+}
+
 const CHAPTERS=[
  {id:"market",  n:"II", name:"The Trading Floor", need:3,  assets:15,   world:null,
   ds:"A desk, a wire, and one quarter of advance notice on your own decisions."},
@@ -777,7 +898,8 @@ function nextRoute(id){
   return rs.slice().sort((a,b)=>(b.have/b.need)-(a.have/a.need))[0];
 }
 const routeTxt=r=>(r.pct()? r.have.toFixed(1)+"% / "+r.need+"%" : fmt(r.have)+" / "+fmt(r.need))+" "+r.label;
-const chapterOpen=id=>chapterRoutes(id).some(r=>r.have>=r.need);
+const CHAPKEY={market:"mkt",token:"tok",conflict:"war",reform:"ref"};
+const chapterOpen=id=>stageOpen(CHAPKEY[id]);
 const SUSP_PER_TRADE=9;      // attention earned for trading on a pending decision
 const SUSP_DECAY=2.0;        // per quarter
 
@@ -1270,9 +1392,9 @@ function freshGame(){
     hiStreak:0, calmStreak:0,
     f_revolt:0, f_bail:0,
     tok:freshToken(), war:freshWar(), mkt:freshMarket(),
-    dosDone:{}, dosActive:[], dosClaim:{},
+    dosDone:{}, dosActive:[], dosClaim:{}, coldDone:0, reaff:0,
     disp:[], seenDos:false,
-    era:1, reforms:0, seign:0, seignEarned:0, charter:{}, grandTotal:0
+    era:1, reforms:0, seign:0, seignEarned:0, charter:{}, grandTotal:0, unlocked:{ops:true}
   });
 }
 let S=freshGame();
@@ -1322,7 +1444,7 @@ const revolting = ()=>S.t < S.revoltEnd;
 function income(){
   let base=0;
   GENS.forEach((g,i)=>{ base += S.gens[i]*g.rate*genMult(g.id)*tierMult(i); });
-  let v=base*globMult()*irMult()*nodeInc()*capInc()*warInc()*warDebuff()*chInc();
+  let v=base*globMult()*irMult()*nodeInc()*capInc()*warInc()*warDebuff()*chInc()*reaffMult();
   if(revolting()) v*=revoltFactor();
   return v;
 }
@@ -1396,9 +1518,9 @@ function nodeState(n){
   if(idx>0 && !has(branch.nodes[idx-1].id)) return "lock";
   return S.assets>=n.cost ? "can" : "wait";
 }
-const dosUnlocked = ()=>S.crises>=1;
+const dosUnlocked = ()=>stageOpen("dos");
 function dosOfferable(){
-  const undone=DOSSIERS.filter(d=>!S.dosDone[d.id]);
+  const undone=allDos().filter(d=>!S.dosDone[d.id]);
   return undone.slice(0,dosSlots()+2);
 }
 
@@ -1512,8 +1634,8 @@ function acceptDos(d){
 }
 function checkDossiers(){
   for(const id of S.dosActive){
-    const d=DOSSIERS.find(x=>x.id===id);
-    if(d.cur()>=d.need) S.dosClaim[id]=true;
+    const d=findDos(id);
+    if(d&&d.cur()>=d.need) S.dosClaim[id]=true;
   }
 }
 function claimDos(d){
@@ -1521,6 +1643,7 @@ function claimDos(d){
   const rw=Math.max(1,Math.round(d.rew*dosRewMult()));
   S.assets+=rw; S.assetsEarned+=rw;
   S.dosDone[d.id]=true;
+  if(d.cold) S.coldDone=(S.coldDone||0)+1;
   delete S.dosClaim[d.id];
   S.dosActive=S.dosActive.filter(x=>x!==d.id);
   dispatch("Dossier closed — "+d.name+" · +"+rw+" Assets.","win");
@@ -1554,7 +1677,7 @@ function doCrisis(){
       const carry={t:S.t,q:S.q,qAcc:S.qAcc,assets:S.assets,assetsEarned:S.assetsEarned,crisisAssets:S.crisisAssets,nodes:S.nodes,caps:S.caps,
         crises:S.crises,revolts:S.revolts,allTime:S.allTime,bestRun:S.bestRun,hiStreak:0,calmStreak:0,
         f_revolt:S.f_revolt,f_bail:S.f_bail,dosDone:S.dosDone,dosActive:S.dosActive,dosClaim:S.dosClaim,
-        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war,mkt:S.mkt};
+        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war,mkt:S.mkt,unlocked:S.unlocked};
       /* Your equity is held offshore and survives the collapse — but the
          collapse is precisely what moves those prices, in both directions. */
       for(const x of SECTORS) S.mkt.px[x.id]=Math.max(4,S.mkt.px[x.id]*x.crash);
@@ -1612,7 +1735,7 @@ function paint(){
   $("#rate").style.color=revolting()?"#d92d43":"var(--green)";
   $("#signSub").textContent="+"+money(perClick())+" per signature";
   $("#qLbl").textContent=qName(S.q);
-  const open=CHAPTERS.filter(c=>S.crises>=c.need).pop();
+  const open=CHAPTERS.filter(c=>chapterOpen(c.id)).pop();
   $("#chapLbl").textContent = (S.reforms>0?"Era "+S.era+" · ":"")+(open ? "Chapter "+open.n+" — "+open.name : "Chapter I — The Pyramid Awakens");
   $("#qBar").style.width=(S.qAcc/QSEC*100)+"%";
 
@@ -1654,27 +1777,31 @@ function paint(){
       "you are at "+money(S.runTotal)+" ("+
       Math.min(99,Math.floor(S.runTotal/nextAssetBar()*100))+"%).";
 
-  const shut=CHAPTERS.filter(c=>!chapterOpen(c.id));
-  $("#nextObj").innerHTML = shut.length
-    ? "<span style='color:var(--gold)'>NEXT — Chapter "+shut[0].n+", "+shut[0].name+"</span><br>"+
-      chapterRoutes(shut[0].id).map(r=>"· "+routeTxt(r)).join("<br>")
-    : "<span style='color:var(--green)'>Every chapter is open.</span>";
+  refreshUnlocks();
+  const pyr=stageOpen("pyr");
+  $("#crisis").style.display=pyr?"":"none";
+  $("#cHint").style.display=pyr?"":"none";
+  const nx=nextStage();
+  $("#nextObj").innerHTML = nx
+    ? "<span style='color:var(--gold)'>NEXT — "+nx.name+"</span><br>"+
+      "<span style='color:#57506a'>opened from "+nx.from+"</span><br>"+stageProgress(nx)
+    : "<span style='color:var(--green)'>Every system is open.</span>";
   $("#assetBox").style.display=S.assetsEarned>0?"":"none";
   $("#asLbl").textContent=fmt(S.assets)+(S.assetsEarned>S.assets?" / "+fmt(S.assetsEarned)+" earned":"");
 
-  const dosTab=document.querySelector('.tab[data-p="Dos"]');
-  dosTab.classList.toggle("off",!dosUnlocked());
-  document.querySelector('.tab[data-p="Mkt"]').classList.toggle("off",!chapterOpen("market"));
-  document.querySelector('.tab[data-p="Tok"]').classList.toggle("off",!chapterOpen("token"));
-  document.querySelector('.tab[data-p="War"]').classList.toggle("off",!chapterOpen("conflict"));
-  const refSeen=chapterOpen("reform")||S.reforms>0;
-  document.querySelector('.tab[data-p="Ref"]').classList.toggle("off",!refSeen);
+  /* A locked system is not shown at all — a greyed tab is a promise the player
+     cannot act on, and eight of them at once reads as a broken game. */
+  for(const c of CHAIN){
+    const el=document.querySelector('.tab[data-p="'+c.tab+'"]');
+    if(el) el.style.display=stageOpen(c.id)?"":"none";
+  }
+  const refSeen=stageOpen("ref");
   $("#dRef").style.display=(refSeen&&(canReform()||CHARTER.some(c=>{
     const i=CHARTER.indexOf(c); return !hasCh(c.id)&&S.seign>=c.cost&&(i===0||hasCh(CHARTER[i-1].id));})))
     ?"inline-block":"none";
-  $("#dWar").style.display=(chapterOpen("conflict")&&war().inf>0)?"inline-block":"none";
-  $("#dTok").style.display=(chapterOpen("token")&&(!tok().live||tok().hype<12))?"inline-block":"none";
-  $("#dMkt").style.display=(chapterOpen("market")&&mkt().susp>=60)?"inline-block":"none";
+  $("#dWar").style.display=(stageOpen("war")&&war().inf>0)?"inline-block":"none";
+  $("#dTok").style.display=(stageOpen("tok")&&(!tok().live||tok().hype<12))?"inline-block":"none";
+  $("#dMkt").style.display=(stageOpen("mkt")&&mkt().susp>=60)?"inline-block":"none";
   $("#dOps").style.display=GENS.some((g,i)=>genVisible(i)&&S.debt>=bulkCost(i,1))?"inline-block":"none";
   $("#dDoc").style.display=UPS.some(x=>upAvailable(x)&&S.debt>=x.cost)?"inline-block":"none";
   $("#dDos").style.display=(dosUnlocked()&&(Object.keys(S.dosClaim).length||
@@ -1718,7 +1845,7 @@ function renderOps(){
 
 function renderDoc(){
   const vis=UPS.filter(upVisible);
-  const key=vis.map(u=>u.id+(S.ups[u.id]?1:0)+(upAvailable(u)?"a":"l")+(S.debt>=u.cost?"$":"-")).join();
+  const key=vis.map(u=>u.id+(S.ups[u.id]?1:0)+(upAvailable(u)?"a":"l")+(S.debt>=u.cost?"$":"-")).join()+"|"+reaffLvl()+(S.debt>=reaffCost()?"$":"-");
   panel("Doc",key,()=>{
     if(!vis.length) return "<div class='empty'>No doctrine has been revealed to you yet.<br>Originate more debt — the Eye is watching your volume.</div>";
     const own=vis.filter(u=>S.ups[u.id]), av=vis.filter(u=>!S.ups[u.id]);
@@ -1735,6 +1862,14 @@ function renderDoc(){
           (lock?"<div class='rt' style='color:#8a8199'>Sealed — "+reqTxt(u)+"</div>":"")+"</div>"+
           "<div class='buy'><div class='cost' id='uc_"+u.id+"'></div></div></div>";
       }).join(""):"")+
+      (UPS.every(u=>S.ups[u.id])?"<div class='paneHead' style='margin-top:14px'><div class='sect'>Reaffirmation — repeatable</div></div>"+
+        "<div class='ds' style='margin:-4px 0 8px'>Every doctrine is enacted. They can, however, be enacted again — "+
+        "louder, and with a commemorative dinner.</div>"+
+        "<div class='item"+(S.debt>=reaffCost()?"":" locked")+"' id='reaffCard'><div class='sig'>∎</div>"+
+        "<div><div class='nm'>Reaffirm the Doctrines</div>"+
+        "<div class='ds'>Nothing changes and everything is restated. All income ×"+REAFF.mult+" per reaffirmation.</div>"+
+        "<div class='rt'>reaffirmed "+reaffLvl()+" times · currently ×"+reaffMult().toFixed(2)+"</div></div>"+
+        "<div class='buy'><div class='cost"+(S.debt>=reaffCost()?"":" no")+"'>"+money(reaffCost())+"</div></div></div>":"")+
       (own.length?"<div class='paneHead' style='margin-top:14px'><div class='sect'>Doctrines Enacted ("+own.length+")</div></div>"+
         own.map(u=>"<div class='item owned'><div class='sig'>"+u.sig+"</div><div><div class='nm'>"+u.name+
         "</div><div class='ds'>"+u.ds+"</div></div><div class='buy'><div class='cnt' style='color:var(--green)'>enacted</div></div></div>").join(""):"");
@@ -1742,6 +1877,7 @@ function renderDoc(){
   $("#pDoc").querySelectorAll("[data-u]").forEach(el=>
     el.onclick=()=>buyUp(UPS.find(x=>x.id===el.dataset.u)));
   const ba=document.getElementById("buyAllDoc"); if(ba) ba.onclick=buyAllUps;
+  const rc=document.getElementById("reaffCard"); if(rc) rc.onclick=buyReaff;
   vis.forEach(u=>{
     const el=document.getElementById("uc_"+u.id);
     if(el){ el.textContent=money(u.cost); el.className="cost"+(S.debt<u.cost?" no":""); }
@@ -1750,29 +1886,30 @@ function renderDoc(){
 
 function renderDos(){
   const off=dosOfferable();
-  const key=Object.keys(S.dosDone).join()+"|"+S.dosActive.join()+"|"+Object.keys(S.dosClaim).join()+
+  const key=Object.keys(S.dosDone).length+"|"+S.dosActive.join()+"|"+Object.keys(S.dosClaim).join()+"|"+(S.coldDone||0)+
             "|"+dosSlots()+"|"+off.map(d=>d.id+Math.min(1,d.cur()/d.need).toFixed(2)).join();
   panel("Dos",key,()=>{
     if(!dosUnlocked()) return "<div class='empty'>The Dossier Room is sealed.<br><br>"+
       "It opens after your first engineered crisis. Until you have demonstrably<br>"+
       "collapsed something on purpose, nobody upstairs will show you the files.</div>";
     const done=DOSSIERS.filter(d=>S.dosDone[d.id]);
+    const cold=S.coldDone||0;
     let h="<div class='paneHead'><div class='sect'>Open Files — "+S.dosActive.length+" / "+dosSlots()+" slots</div></div>";
-    const act=S.dosActive.map(id=>DOSSIERS.find(d=>d.id===id));
+    const act=S.dosActive.map(id=>findDos(id)).filter(Boolean);
     if(!act.length) h+="<div class='empty' style='padding:10px'>No file is open. Accept one below.</div>";
     h+=act.map(d=>dosCard(d,"act")).join("");
     const avail=off.filter(d=>!S.dosActive.includes(d.id));
     if(avail.length) h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Available Files</div></div>"+
       avail.map(d=>dosCard(d,"")).join("");
-    if(done.length) h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Closed ("+done.length+" / "+DOSSIERS.length+")</div></div>"+
+    if(done.length) h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Closed ("+done.length+" / "+DOSSIERS.length+(cold?" · "+cold+" cold cases":"")+")</div></div>"+
       done.map(d=>"<div class='dos done'><div class='code'>"+d.code+"</div><div class='ti'>"+d.name+
         "</div><div class='goal'>Closed · +"+Math.max(1,Math.round(d.rew*dosRewMult()))+" Assets</div></div>").join("");
     return h;
   });
   $("#pDos").querySelectorAll("[data-acc]").forEach(el=>
-    el.onclick=()=>acceptDos(DOSSIERS.find(d=>d.id===el.dataset.acc)));
+    el.onclick=()=>acceptDos(findDos(el.dataset.acc)));
   $("#pDos").querySelectorAll("[data-cl]").forEach(el=>
-    el.onclick=()=>claimDos(DOSSIERS.find(d=>d.id===el.dataset.cl)));
+    el.onclick=()=>claimDos(findDos(el.dataset.cl)));
 }
 function dosCard(d,cls){
   const active=cls==="act", pr=Math.min(1,d.cur()/d.need), ready=!!S.dosClaim[d.id];
@@ -1848,7 +1985,7 @@ function renderMkt(){
     if(!open){
       return "<div class='empty'>The trading floor is dark.<br><br>"+
         "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
-        chapterRoutes("market").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
+        "&nbsp;· "+stageProgress(stage("mkt"))+"<br><br>"+
         "Nobody hands a desk to a man who has only collapsed things by accident.</div>";
     }
     const pend=insiderRisk(), wp=worldPct(), t=taxRate();
@@ -1961,7 +2098,7 @@ function renderTok(){
     if(!open){
       return "<div class='empty'>No issuance desk yet.<br><br>"+
         "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
-        chapterRoutes("token").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
+        "&nbsp;· "+stageProgress(stage("tok"))+"<br><br>"+
         "Creating money out of debt is one thing. Creating it out of nothing at all takes a licence,<br>"+
         "or rather, it takes the confidence not to ask whether one is required.</div>";
     }
@@ -2042,7 +2179,7 @@ function renderWar(){
     if(!open){
       return "<div class='empty'>No one is fighting you yet.<br><br>"+
         "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
-        chapterRoutes("conflict").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
+        "&nbsp;· "+stageProgress(stage("war"))+"<br><br>"+
         "Below a certain size you are a nuisance. Above it you are a counterparty,<br>"+
         "and counterparties are dealt with rather than prosecuted.</div>";
     }
@@ -2097,7 +2234,7 @@ function renderRef(){
     if(!seen){
       return "<div class='empty'>The unit of account is not yours yet.<br><br>"+
         "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
-        chapterRoutes("reform").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
+        "&nbsp;· "+stageProgress(stage("ref"))+"<br><br>"+
         "Collapsing a bank is ordinary work. Collapsing the money everyone else keeps score in<br>"+
         "requires first becoming the only party still able to keep score.</div>";
     }
@@ -2110,7 +2247,7 @@ function renderRef(){
       "<div class='ds'>on offer for ending this era</div></div></div>"+
       "<button class='reformbtn' id='doReform' "+(ready?"":"disabled")+">"+
         (ready?"Reissue the Unit of Account  ▸  +"+fmt(y)+" ◈"
-              :"Not yet — "+routeTxt(nextRoute("reform")))+"</button>"+
+              :"Not yet — "+stageProgress(stage("ref")))+"</button>"+
       "<div class='ds' style='margin:-6px 0 14px;line-height:1.8'>A reform erases everything a crisis "+
       "erases, and then the things a crisis spares: the Pyramid, the token, every conflict won, and your "+
       "Seized Assets. Every chapter closes. The Charter below is the only thing that crosses over — "+
@@ -2172,14 +2309,12 @@ function renderLed(){
     "<div class='stat'><span>Unrest dampening</span><b>×"+calmTotal().toFixed(2)+
       (upCalm()*nodeCalm()*capCalm()<CALM_FLOOR?" (floored)":"")+"</b></div>"+
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Chapters</div></div>"+
-    "<div class='chapline open'><span><b>Chapter I</b> — Origination</span><span>open</span></div>"+
-    CHAPTERS.map(c=>{
-      const ok=chapterOpen(c.id), rs=chapterRoutes(c.id);
-      return "<div class='chapline "+(ok?"open":"shut")+"'><span><b>Chapter "+c.n+"</b> — "+c.name+
-        "<br><span style='color:#57506a'>"+c.ds+"</span>"+
-        (ok?"":"<br><span style='color:#8a8199'>any one of: "+
-          rs.map(r=>routeTxt(r)).join(" &nbsp;·&nbsp; ")+"</span>")+
-        "</span><span style='white-space:nowrap'>"+(ok?"open":"sealed")+"</span></div>";
+    CHAIN.map((c,i)=>{
+      const ok=stageOpen(c.id), prev=i===0||stageOpen(CHAIN[i-1].id);
+      return "<div class='chapline "+(ok?"open":"shut")+"'><span><b>"+(i+1)+". "+c.name+"</b>"+
+        (c.from?"<br><span style='color:#57506a'>opened from "+c.from+"</span>":"")+
+        (ok||!prev?"":"<br><span style='color:#8a8199'>"+stageProgress(c)+"</span>")+
+        "</span><span style='white-space:nowrap'>"+(ok?"open":prev?"next":"sealed")+"</span></div>";
     }).join("")+
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Dispatches</div></div>"+
     (S.disp.length?S.disp.map(d=>"<div class='disp "+d.c+"'><b>"+d.q+"</b> — "+d.t+"</div>").join("")
@@ -2302,11 +2437,8 @@ $("#btnSave").addEventListener("click",exportSave);
 $("#btnLoad").addEventListener("click",importSave);
 $("#btnWipe").addEventListener("click",wipeSave);
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
-  if(t.dataset.p==="Dos"&&!dosUnlocked()) return;
-  if(t.dataset.p==="Mkt"&&!chapterOpen("market")) return;
-  if(t.dataset.p==="Tok"&&!chapterOpen("token")) return;
-  if(t.dataset.p==="War"&&!chapterOpen("conflict")) return;
-  if(t.dataset.p==="Ref"&&!(chapterOpen("reform")||S.reforms>0)) return;
+  const st=CHAIN.find(c=>c.tab===t.dataset.p);
+  if(st&&!stageOpen(st.id)) return;
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); $("#p"+t.dataset.p).classList.add("on");
