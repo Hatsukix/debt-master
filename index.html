@@ -1250,8 +1250,9 @@ function buyQty(i){
    already paid out. Collapsing early and often therefore yields nothing —
    the only way forward is to go deeper than last time. */
 const YIELD_COEF=2.0, YIELD_EXP=0.285;
+const MIN_CYCLE=1.5e6;      // a cycle smaller than this is not worth collapsing at all
 function assetsDeserved(){
-  if(S.runTotal<1.5e6) return 0;
+  if(S.runTotal<MIN_CYCLE) return 0;
   return Math.floor(Math.pow(S.runTotal/1e6,YIELD_EXP)*YIELD_COEF);
 }
 function crisisYield(){ return Math.max(0, assetsDeserved()-S.crisisAssets); }
@@ -1260,7 +1261,13 @@ function crisisYield(){ return Math.max(0, assetsDeserved()-S.crisisAssets); }
    what this game is for. */
 function startingStake(){ return Math.max(60, 40*Math.sqrt(S.bestRun)); }
 /* runTotal the next collapse must beat before it pays anything at all */
-function nextAssetBar(){ return 1e6*Math.pow((S.crisisAssets+1)/YIELD_COEF,1/YIELD_EXP); }
+function nextAssetBar(){
+  /* Nudged up by a hair: at very large values the double-precision round trip
+     through pow() can land a fraction below the floor() boundary, so the figure
+     printed to the player would be reached without the button waking up. */
+  const raw=1e6*Math.pow((S.crisisAssets+1)/YIELD_COEF,1/YIELD_EXP)*(1+1e-9);
+  return Math.max(MIN_CYCLE, raw);
+}
 
 /* ---------- visibility ---------- */
 const genVisible = i => i===0 || S.gens[i-1]>0 || S.allTime>=GENS[i].cost*0.3;
@@ -1520,8 +1527,9 @@ function paint(){
   $("#cHint").innerHTML = y>=1
     ? (S.unrest>=th?"Ready. The wreckage is worth "+fmt(y)+" Assets."
                    :"Worth "+fmt(y)+" Assets, but unrest must reach "+th+"% first.")
-    : "This cycle must originate "+money(nextAssetBar())+" before a collapse pays anything. "+
-      "You are at "+money(S.runTotal)+".";
+    : "This cycle must originate "+money(nextAssetBar())+" before a collapse pays anything — "+
+      "you are at "+money(S.runTotal)+" ("+
+      Math.min(99,Math.floor(S.runTotal/nextAssetBar()*100))+"%).";
 
   $("#assetBox").style.display=S.assetsEarned>0?"":"none";
   $("#asLbl").textContent=fmt(S.assets)+(S.assetsEarned>S.assets?" / "+fmt(S.assetsEarned)+" earned":"");
