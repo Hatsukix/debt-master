@@ -490,12 +490,17 @@ const BRINK = 2.5;         // seconds the meter sits visibly full before a revol
 const COSTGROW = 1.14;     // per-unit cost growth
 
 /* ---------- formatting ---------- */
-const SUF=["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","Ud","Dd"];
+const SUF=["","K","M","B","T","Qa","Qi","Sx","Sp","Oc","No","Dc","Ud","Dd","Td","Qd",
+           "QiD","SxD","SpD","OcD","NoD","Vg","UVg","DVg","TVg"];
 function fmt(n){
-  if(!isFinite(n))return"∞";
-  if(n<0)return"-"+fmt(-n);
-  if(n<1000)return (n<10&&n%1!==0)?n.toFixed(1):Math.floor(n).toString();
-  let t=0;while(n>=1000&&t<SUF.length-1){n/=1000;t++;}
+  if(typeof n!=="number"||Number.isNaN(n)) return "—";   // never dress a broken number as a big one
+  if(n===Infinity) return "∞";
+  if(n===-Infinity) return "-∞";
+  if(n<0) return "-"+fmt(-n);
+  if(n<1000) return (n<10&&n%1!==0)?n.toFixed(1):Math.floor(n).toString();
+  let t=0;
+  while(n>=1000&&t<SUF.length-1){ n/=1000; t++; }
+  if(n>=1000) return n.toExponential(2).replace("e+","e")+SUF[SUF.length-1];  // past the table
   return n.toFixed(n<10?2:n<100?1:0)+SUF[t];
 }
 const money=n=>"§"+fmt(n);
@@ -908,14 +913,17 @@ function freshMarket(){
   for(const x of SECTORS){ m.px[x.id]=100; m.pos[x.id]=0; m.cost[x.id]=0; m.hist[x.id]=[100]; }
   return m;
 }
-const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); if(!S.mkt.havens) S.mkt.havens={};
-  if(!S.mkt.scale) S.mkt.scale=Math.max(1e-6, income()*QSEC*SCALE_K); return S.mkt; };
-/* Ratchets, never falls: your holdings appreciate with the world you are buying. */
-function ratchetScale(){
+const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); if(!S.mkt.havens) S.mkt.havens={}; return S.mkt; };
+/* Ratchets on every read, never falls. It used to be initialised lazily on first
+   access — which happened during the boot repaint, when income() is still 0, so
+   it stuck at the 1e-6 floor and the whole world cost §500. */
+function mktScale(){
   const m=mkt(), want=income()*QSEC*SCALE_K;
-  if(want>m.scale) m.scale=want;
+  if(!(m.scale>0)||want>m.scale) m.scale=want>0?want:1e-6;
+  return m.scale;
 }
-const shareVal=id=>mkt().px[id]*mkt().scale;
+function ratchetScale(){ mktScale(); }
+const shareVal=id=>mkt().px[id]*mktScale();
 const heldShares  = id=>mkt().pos[id]||0;
 const freeFloat   = id=>Math.max(0,SHARES-heldShares(id));
 const ownPct      = id=>heldShares(id)/SHARES;
@@ -1674,14 +1682,15 @@ function doCrisis(){
       if(inc>=4e6) S.f_bail=1;
       S.assets+=y; S.assetsEarned+=y; S.crisisAssets+=y; S.crises++;
       const kept=keepOnCrisis()?S.gens.map(v=>Math.floor(v*keepOnCrisis())):GENS.map(()=>0);
-      const carry={t:S.t,q:S.q,qAcc:S.qAcc,assets:S.assets,assetsEarned:S.assetsEarned,crisisAssets:S.crisisAssets,nodes:S.nodes,caps:S.caps,
-        crises:S.crises,revolts:S.revolts,allTime:S.allTime,bestRun:S.bestRun,hiStreak:0,calmStreak:0,
-        f_revolt:S.f_revolt,f_bail:S.f_bail,dosDone:S.dosDone,dosActive:S.dosActive,dosClaim:S.dosClaim,
-        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war,mkt:S.mkt,unlocked:S.unlocked};
       /* Your equity is held offshore and survives the collapse — but the
          collapse is precisely what moves those prices, in both directions. */
       for(const x of SECTORS) S.mkt.px[x.id]=Math.max(4,S.mkt.px[x.id]*x.crash);
-      S=Object.assign(freshRun(),carry);
+      /* Keep EVERYTHING, then overwrite only the per-cycle fields freshRun()
+         defines. The previous version listed what to KEEP, and every field added
+         afterwards — the era, the Charter, the seigniorage, the cold cases — was
+         silently dropped on the next crisis. A keep-list always drifts. */
+      S=Object.assign({},S,freshRun());
+      S.hiStreak=0; S.calmStreak=0;
       S.gens=kept;
       S.debt=startingStake();
       $("#ir").value=0; $("#ir").max=maxRate();
@@ -1713,6 +1722,7 @@ function importSave(){
         if(typeof o.debt!=="number"||!Array.isArray(o.gens)) throw 0;
         S=Object.assign(freshGame(),o);
         while(S.gens.length<GENS.length) S.gens.push(0);
+        healNested(); saveBlocked=false;
         $("#ir").max=maxRate(); $("#ir").value=S.ratePending!==null?S.ratePending:S.rate;
         saveGame(); closeModal(); dirty();
       }catch(e){ showModal("Unreadable",
@@ -1747,7 +1757,7 @@ function paint(){
     (S.ratePending!==null&&S.ratePending!==S.rate?
       "<br><span class='pend'>Pending — takes effect at "+qName(S.q+1)+".</span>":
       (noLag()?"<br>Advance Notice: changes apply immediately.":"<br>Changes take effect at the next quarter."))
-    + (unrestPerSec()<=0&&S.rate>=maxRate()-1?"<br><span style='color:#d92d43'>Even at the ceiling this rate cannot anger anyone. No crisis can be staged.</span>":"");
+;
 
   const u=Math.max(0,Math.min(100,S.unrest));
   $("#unLbl").textContent=u.toFixed(0)+"%";
@@ -1794,6 +1804,15 @@ function paint(){
   for(const c of CHAIN){
     const el=document.querySelector('.tab[data-p="'+c.tab+'"]');
     if(el) el.style.display=stageOpen(c.id)?"":"none";
+  }
+  /* A reform hides the tab you are standing on. Fall back to Operations rather
+     than leaving the player on a pane whose tab no longer exists. */
+  const act=document.querySelector(".tab.on");
+  if(act&&act.style.display==="none"){
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    document.querySelector('.tab[data-p="Ops"]').classList.add("on");
+    $("#pOps").classList.add("on");
   }
   const refSeen=stageOpen("ref");
   $("#dRef").style.display=(refSeen&&(canReform()||CHARTER.some(c=>{
@@ -2336,27 +2355,90 @@ const SAVE_KEY="debtmaster_v02";
 const OFFLINE_CAP=12*3600;   // seconds of away-time credited
 const OFFLINE_RATE=0.60;     // at 60% efficiency
 
+/* JSON turns NaN and Infinity into null, and a null where a number is expected
+   makes the whole save unreadable next time. Nothing non-finite gets out. */
+function healNumbers(o,depth){
+  if(depth>4||o===null||typeof o!=="object") return 0;
+  let fixed=0;
+  for(const k of Object.keys(o)){
+    const v=o[k];
+    if(typeof v==="number"){ if(!isFinite(v)){ o[k]=0; fixed++; } }
+    else if(v&&typeof v==="object") fixed+=healNumbers(v,depth+1);
+  }
+  return fixed;
+}
+let saveBlocked=false;
 function saveGame(){
+  if(saveBlocked) return false;
   try{
+    const fixed=healNumbers(S,0);
+    if(fixed) dispatch(fixed+" corrupted value"+(fixed>1?"s":"")+" repaired before saving.","evt");
     const blob=Object.assign({},S,{savedAt:Date.now(),ver:2});
-    localStorage.setItem(SAVE_KEY,btoa(unescape(encodeURIComponent(JSON.stringify(blob)))));
+    const str=btoa(unescape(encodeURIComponent(JSON.stringify(blob))));
+    const prev=localStorage.getItem(SAVE_KEY);
+    if(prev) localStorage.setItem(SAVE_KEY+"_bak",prev);   // one generation of undo
+    localStorage.setItem(SAVE_KEY,str);
     return true;
   }catch(e){ return false; }
 }
+function parseSave(raw){
+  const o=JSON.parse(decodeURIComponent(escape(atob(raw))));
+  if(!Array.isArray(o.gens)) throw new Error("no gens");
+  if(typeof o.debt!=="number"||!isFinite(o.debt)) o.debt=0;   // repairable, not fatal
+  return o;
+}
+/* Nested state is replaced wholesale by Object.assign, so any field added to
+   tok/war/mkt after a save was written arrives missing and throws on the next
+   tick. Heal them against fresh templates instead. */
+function healNested(){
+  S.tok=Object.assign(freshToken(),S.tok||{});
+  S.war=Object.assign(freshWar(),S.war||{});
+  S.mkt=Object.assign(freshMarket(),S.mkt||{});
+  for(const o of ["px","pos","cost","hist"]) if(!S.mkt[o]) S.mkt[o]={};
+  for(const x of SECTORS){
+    if(typeof S.mkt.px[x.id]!=="number"||!isFinite(S.mkt.px[x.id])) S.mkt.px[x.id]=100;
+    if(typeof S.mkt.pos[x.id]!=="number"||!isFinite(S.mkt.pos[x.id])) S.mkt.pos[x.id]=0;
+    if(typeof S.mkt.cost[x.id]!=="number"||!isFinite(S.mkt.cost[x.id])) S.mkt.cost[x.id]=0;
+    if(!Array.isArray(S.mkt.hist[x.id])||!S.mkt.hist[x.id].length) S.mkt.hist[x.id]=[S.mkt.px[x.id]];
+  }
+  if(!Array.isArray(S.tok.hist)) S.tok.hist=[S.tok.px||0];
+  if(!S.mkt.havens) S.mkt.havens={};
+  if(!S.war.applied) S.war.applied={};
+  if(!S.war.won) S.war.won={};
+  if(!S.war.touched) S.war.touched={};
+  if(!S.unlocked) S.unlocked={ops:true};
+  if(!S.charter) S.charter={};
+  healNumbers(S,0);
+}
 function loadGame(){
-  let raw=null;
-  try{ raw=localStorage.getItem(SAVE_KEY); }catch(e){ return false; }
-  if(!raw) return false;
-  try{
-    const o=JSON.parse(decodeURIComponent(escape(atob(raw))));
-    if(typeof o.debt!=="number"||!Array.isArray(o.gens)) return false;
-    const savedAt=o.savedAt; delete o.savedAt; delete o.ver;
-    S=Object.assign(freshGame(),o);
-    while(S.gens.length<GENS.length) S.gens.push(0);
-    S.revoltEnd=-1;
-    if(savedAt) creditOffline((Date.now()-savedAt)/1000);
-    return true;
-  }catch(e){ return false; }
+  let raw=null,bak=null;
+  try{ raw=localStorage.getItem(SAVE_KEY); bak=localStorage.getItem(SAVE_KEY+"_bak"); }catch(e){ return false; }
+  if(!raw&&!bak) return false;
+  let o=null, usedBackup=false;
+  try{ o=parseSave(raw); }
+  catch(e){
+    try{ o=parseSave(bak); usedBackup=true; }
+    catch(e2){
+      /* Both unreadable. Do NOT start a fresh game on top of them — the autosave
+         would erase whatever is still recoverable ten seconds later. */
+      saveBlocked=true;
+      setTimeout(()=>showModal("The Ledger Will Not Open",
+        "<p>A save exists in this browser but cannot be read. Rather than start a new game "+
+        "on top of it, automatic saving has been suspended so that nothing is overwritten.</p>"+
+        "<p style='color:#8a8199'>Use <b>Import</b> if you have an exported ledger. Use "+
+        "<b>Wipe</b> to discard the damaged one and start again — that re-enables saving.</p>",
+        [{t:"Understood",f:closeModal}]),700);
+      return false;
+    }
+  }
+  const savedAt=o.savedAt; delete o.savedAt; delete o.ver;
+  S=Object.assign(freshGame(),o);
+  while(S.gens.length<GENS.length) S.gens.push(0);
+  S.revoltEnd=-1;
+  healNested();
+  if(usedBackup) dispatch("The current ledger was damaged; the previous one was restored.","evt");
+  if(savedAt) creditOffline((Date.now()-savedAt)/1000);
+  return true;
 }
 function creditOffline(sec){
   if(!(sec>60)) return;
@@ -2389,7 +2471,8 @@ function wipeSave(){
   showModal("Dissolve the Institution?",
     "<p>This erases your save in this browser: the Pyramid, every dossier, every Seized Asset. There is no recovery, and there is no appeal.</p>",
     [{t:"Cancel",f:closeModal},{t:"Dissolve Everything",f:()=>{
-      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_KEY+"_bak"); }catch(e){}
+      saveBlocked=false;
       S=freshGame(); $("#ir").max=maxRate(); $("#ir").value=0;
       dispatch("Institution refounded. Regulator informed. Regulator unconcerned.","");
       closeModal(); dirty();
