@@ -402,6 +402,7 @@
         <div class="hint" id="unHint" style="margin-top:7px"></div>
         <button class="crisisbtn" id="crisis" disabled>Engineer a Crisis</button>
         <div class="hint" id="cHint" style="margin-top:6px"></div>
+        <div class="hint" id="nextObj" style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(212,175,55,.15)"></div>
       </div>
 
       <div class="box" id="assetBox" style="display:none">
@@ -690,59 +691,166 @@ const HEADLINES=[
    That gap is the edge. Positioning inside it is insider trading, so trading
    while a rate change is pending raises Regulatory Attention.
    ========================================================================== */
+/* Every sector has a finite number of shares. Buying takes them out of
+   circulation and pushes the price up, so cornering the world costs more the
+   closer you get to owning it. */
 const SECTORS=[
- {id:"hous",sig:"⌂",name:"Housing & Development",beta:-2.0,unr:-0.3,crash:0.40,
+ {id:"hous",sig:"⌂",name:"Housing & Development",beta:-2.0,unr:-0.3,crash:0.40,div:0.026,
   ds:"Everything anyone will ever owe on a roof. Moves hardest against your rate."},
- {id:"cred",sig:"₪",name:"Consumer Credit Index",beta:-1.5,unr:-0.5,crash:0.35,
-  ds:"Priced on the assumption that nobody reads. Falls when borrowing costs bite."},
- {id:"bank",sig:"▤",name:"Retail Banking Index",beta:1.3,unr:-0.2,crash:0.45,
+ {id:"cred",sig:"₪",name:"Consumer Credit Index",beta:-1.5,unr:-0.5,crash:0.35,div:0.035,
+  ds:"Priced on the assumption that nobody reads. Pays well, right up until it does not."},
+ {id:"bank",sig:"▤",name:"Retail Banking Index",beta:1.3,unr:-0.2,crash:0.45,div:0.030,
   ds:"Our esteemed peers. A rate rise is very good for them, and therefore for us."},
- {id:"secu",sig:"⌖",name:"Security & Logistics",beta:0.2,unr:1.0,crash:0.80,
+ {id:"secu",sig:"⌖",name:"Security & Logistics",beta:0.2,unr:1.0,crash:0.80,div:0.021,
   ds:"Sells fences, cameras and reassurance. Quietly indexed to public anger."},
- {id:"hard",sig:"⚜",name:"Hard Assets",beta:-0.5,unr:0.6,crash:1.70,
-  ds:"Metal in a vault. Tedious, until it is the only thing still worth anything."}
+ {id:"hard",sig:"⚜",name:"Hard Assets",beta:-0.5,unr:0.6,crash:1.70,div:0.010,
+  ds:"Metal in a vault. Pays almost nothing and is worth everything on the wrong day."}
 ];
+const SHARES=1e6;            // outstanding shares per sector
+/* Prices are index points, not §. One point is worth mkt().scale, and that
+   scale ratchets up with your income — otherwise cornering the world costs 167%
+   of a quarter early on and 0.0% of one later, which is what it did. */
+const SCALE_K=6e-8;          // whole world ≈ 30 quarters of income at index 100
+const BASE_TAX=0.30;         // flat rate on dividends before any arrangement
+
+/* Tax arrangements. Each is a real, documented, entirely lawful structure. */
+const HAVENS=[
+ {id:"letterbox",cut:0.05,cost:40,name:"A Letterbox in a Low-Tax Jurisdiction",
+  ds:"One room, one filing cabinet, four hundred registered companies, and a receptionist who has met none of them."},
+ {id:"twostep",cut:0.05,cost:120,name:"A Two-Company Structure",
+  ds:"Profit is charged as a royalty by a subsidiary that owns the brand and is resident nowhere in particular."},
+ {id:"treaty",cut:0.05,cost:340,name:"The Treaty Shopping Desk",
+  ds:"Route the dividend through a third country solely because of the treaty, then out again. Nothing arrives, everything passes through."},
+ {id:"ruling",cut:0.04,cost:900,name:"A Ruling Obtained in Advance",
+  ds:"You ask the tax authority to confirm in writing that your arrangement is acceptable. It does. The letter is not published."},
+ {id:"patentbox",cut:0.04,cost:2400,name:"Patent Box Reclassification",
+  ds:"The income is reclassified as innovation. The innovation is the reclassification."},
+ {id:"exemption",cut:0.04,cost:6500,name:"The Participation Exemption",
+  ds:"Dividends between companies you own are not really income, they are movement. Movement is not taxed."},
+ {id:"gift",cut:0.03,cost:18000,name:"An Enterprise Support Package",
+  ds:"The state pays you to keep the jobs you were never going to move. It is announced as a partnership."}
+];
+const MIN_TAX=0.02;          // something always gets through, for appearances
+const havenOwned=id=>!!(S.mkt&&S.mkt.havens&&S.mkt.havens[id]);
+function havenScale(){ return Math.max(1e4, income()*QSEC*0.5); }
+function taxRate(){
+  let t=BASE_TAX;
+  for(const h of HAVENS) if(havenOwned(h.id)) t-=h.cut;
+  for(const x of TARGETS) if(typeof warWon==="function"&&warWon(x.id)&&x.reward&&x.reward.tax) t-=x.reward.tax;
+  return Math.max(MIN_TAX,t);
+}
+function buyHaven(h){
+  const c=h.cost*havenScale();
+  if(havenOwned(h.id)||S.debt<c) return;
+  S.debt-=c; mkt().havens[h.id]=true;
+  dispatch("Tax arrangement in place — "+h.name+". Effective rate now "+(taxRate()*100).toFixed(0)+"%.","win");
+  dirty();
+}
+
+/* Chapters used to open on crisis COUNT alone, which fought the economy: the
+   game rewards fewer, larger collapses, so a strong player could build the whole
+   Pyramid and still be stuck on chapter II. Each chapter now has independent
+   routes and any one of them opens it. */
 const CHAPTERS=[
- {id:"market",  n:"II", name:"The Trading Floor", need:3,
+ {id:"market",  n:"II", name:"The Trading Floor", need:3,  assets:15,   world:null,
   ds:"A desk, a wire, and one quarter of advance notice on your own decisions."},
- {id:"token",   n:"III",name:"The Token",         need:7,
+ {id:"token",   n:"III",name:"The Token",         need:7,  assets:90,   world:0.25,
   ds:"Issue your own money. Own the float. Choose the hour it stops being worth anything."},
- {id:"conflict",n:"IV", name:"Conflicts",         need:11,
+ {id:"conflict",n:"IV", name:"Conflicts",         need:11, assets:320,  world:0.55,
   ds:"Inquiries first, then rival institutions, then sovereigns. In that order of difficulty."},
- {id:"reform",  n:"V",  name:"Monetary Reform",   need:16,
+ {id:"reform",  n:"V",  name:"Monetary Reform",   need:16, assets:1000, world:0.85,
   ds:"Collapse the system itself and reissue it in your own name. Everything resets. You do not."}
 ];
-const chapterOpen=id=>S.crises>=chapterNeed(id);
+/* Every route, with progress, so the next objective is never a mystery. */
+function chapterRoutes(id){
+  const c=CHAPTERS.find(x=>x.id===id), half=hasCh("standing")?0.5:1;
+  const rs=[
+    {label:"engineered crises", have:S.crises, need:Math.ceil(c.need*half), pct:v=>false},
+    {label:"Seized Assets earned", have:S.assetsEarned, need:Math.ceil(c.assets*half), pct:v=>false}
+  ];
+  if(c.world!==null) rs.push({label:"of world equity owned", have:worldPct()*100,
+    need:Math.ceil(c.world*100*half), pct:v=>true});
+  return rs;
+}
+function nextRoute(id){
+  const rs=chapterRoutes(id);
+  return rs.slice().sort((a,b)=>(b.have/b.need)-(a.have/a.need))[0];
+}
+const routeTxt=r=>(r.pct()? r.have.toFixed(1)+"% / "+r.need+"%" : fmt(r.have)+" / "+fmt(r.need))+" "+r.label;
+const chapterOpen=id=>chapterRoutes(id).some(r=>r.have>=r.need);
 const SUSP_PER_TRADE=9;      // attention earned for trading on a pending decision
 const SUSP_DECAY=2.0;        // per quarter
 
 function freshMarket(){
-  const m={px:{},pos:{},cost:{},hist:{},susp:0,realised:0,fines:0};
+  const m={px:{},pos:{},cost:{},hist:{},susp:0,realised:0,fines:0,divs:0,tax:0,havens:{},scale:0};
   for(const x of SECTORS){ m.px[x.id]=100; m.pos[x.id]=0; m.cost[x.id]=0; m.hist[x.id]=[100]; }
   return m;
 }
-const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); return S.mkt; };
+const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); if(!S.mkt.havens) S.mkt.havens={};
+  if(!S.mkt.scale) S.mkt.scale=Math.max(1e-6, income()*QSEC*SCALE_K); return S.mkt; };
+/* Ratchets, never falls: your holdings appreciate with the world you are buying. */
+function ratchetScale(){
+  const m=mkt(), want=income()*QSEC*SCALE_K;
+  if(want>m.scale) m.scale=want;
+}
+const shareVal=id=>mkt().px[id]*mkt().scale;
+const heldShares  = id=>mkt().pos[id]||0;
+const freeFloat   = id=>Math.max(0,SHARES-heldShares(id));
+const ownPct      = id=>heldShares(id)/SHARES;
+function worldPct(){
+  let held=0; for(const x of SECTORS) held+=heldShares(x.id);
+  return held/(SHARES*SECTORS.length);
+}
 function portfolioValue(){
-  const m=mkt(); let v=0;
-  for(const x of SECTORS) v+=m.pos[x.id]*m.px[x.id];
+  let v=0; for(const x of SECTORS) v+=heldShares(x.id)*shareVal(x.id);
   return v;
+}
+/* Scarcity premium: the last shares cost far more than the first. */
+function buyCost(id,pctOfFloat){
+  const n=freeFloat(id)*pctOfFloat;
+  if(n<=0) return Infinity;
+  const scarcity=1+Math.pow(ownPct(id),2)*4;
+  return n*shareVal(id)*scarcity;
 }
 function insiderRisk(){ return S.ratePending!==null && S.ratePending!==S.rate; }
 
 function moveMarket(rateDelta){
   const m=mkt();
+  ratchetScale();
   for(const x of SECTORS){
     const policy = x.beta*rateDelta*0.016;
     const anger  = x.unr*(S.unrest/100-0.35)*0.07;
     const noise  = (Math.random()-0.5)*0.09;
     const drift  = 0.006;
-    m.px[x.id]=Math.max(4, m.px[x.id]*(1+policy+anger+noise+drift));
+    const tight  = ownPct(x.id)*0.03;          // your own buying supports the price
+    m.px[x.id]=Math.max(4, m.px[x.id]*(1+policy+anger+noise+drift+tight));
     const h=m.hist[x.id]; h.push(m.px[x.id]); if(h.length>26) h.shift();
   }
-  /* Check the threshold BEFORE decaying, otherwise a quarter that ends at 101
-     decays to 99 and the investigation can never fire at all. */
+  payDividends();
   if(m.susp>=100) investigation();
   else m.susp=Math.max(0,m.susp-SUSP_DECAY*warSuspDecay());
+}
+/* A sector pays on how it has actually done, not on what it promised. */
+function sectorHealth(id){
+  const h=mkt().hist[id];
+  if(!h||h.length<2) return 1;
+  return Math.max(0.25,Math.min(2.2,h[h.length-1]/h[0]));
+}
+function quarterDividend(id){
+  const x=SECTORS.find(y=>y.id===id);
+  return heldShares(id)*shareVal(id)*x.div*sectorHealth(id);
+}
+function payDividends(){
+  const m=mkt();
+  let gross=0;
+  for(const x of SECTORS) gross+=quarterDividend(x.id);
+  if(gross<=0) return;
+  const t=taxRate(), tax=gross*t, net=gross-tax;
+  m.divs+=net; m.tax+=tax;
+  S.debt+=net; S.runTotal+=net; S.allTime+=net;
+  if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
+  if(S.q%4===0) dispatch("Dividends received "+money(gross)+", tax withheld "+money(tax)+
+    " ("+(t*100).toFixed(0)+"%), net "+money(net)+".","");
 }
 function investigation(){
   const m=mkt();
@@ -760,23 +868,23 @@ function investigation(){
     "already logged it under cost of doing business, which is where it belongs.</p>",
     [{t:"Regrettable",f:closeModal}]);
 }
-function buyStock(id,pct){
-  const m=mkt(), amt=S.debt*pct;
-  if(amt<=0) return;
-  m.pos[id]+=amt/m.px[id]; m.cost[id]+=amt; S.debt-=amt;
+function buyStock(id,pctOfFloat){
+  const m=mkt(), n=freeFloat(id)*pctOfFloat, cost=buyCost(id,pctOfFloat);
+  if(n<=0||!isFinite(cost)||S.debt<cost) return;
+  m.pos[id]+=n; m.cost[id]+=cost; S.debt-=cost;
+  m.px[id]*=1+pctOfFloat*0.20;                 // absorbing the float lifts the price
   if(insiderRisk()) m.susp=Math.min(120,m.susp+SUSP_PER_TRADE);
   dirty();
 }
 function sellStock(id,pct){
-  const m=mkt(), units=m.pos[id]*pct;
-  if(units<=0) return;
-  const value=units*m.px[id], basis=m.cost[id]*pct;
-  m.pos[id]-=units; m.cost[id]-=basis;
+  const m=mkt(), n=heldShares(id)*pct;
+  if(n<=0) return;
+  const value=n*shareVal(id)*(1-Math.min(0.4,pct*0.35)), basis=m.cost[id]*pct;
+  m.pos[id]-=n; m.cost[id]-=basis;
+  m.px[id]*=1-pct*0.18;
   S.debt+=value;
   const profit=value-basis;
   m.realised+=profit;
-  /* only the gain counts as newly originated — moving capital in and out must
-     not inflate the cycle total that prestige is priced on */
   if(profit>0){ S.runTotal+=profit; S.allTime+=profit; if(S.runTotal>S.bestRun) S.bestRun=S.runTotal; }
   if(insiderRisk()) m.susp=Math.min(120,m.susp+SUSP_PER_TRADE);
   dirty();
@@ -938,7 +1046,7 @@ const TARGETS=[
  {id:"classaction",tier:1,sig:"☩",name:"The Class Action",resolve:65,
   ds:"Forty thousand claimants, eleven years, and an average payout roughly the price of a sandwich. The firm that brought it is now on retainer.",
   counter:{susp:3,unrest:1.0,inc:0.06},
-  reward:{fine:0.40, cap:2}, rw:"Settlements cost 60% less · +2 influence per quarter"},
+  reward:{fine:0.40, cap:2, tax:0.03}, rw:"Settlements cost 60% less · dividend tax −3 points · +2 influence per quarter"},
  // ---- tier 2 : rival institutions ---------------------------------------
  {id:"meridian",tier:2,sig:"▦",name:"Meridian Trust",resolve:110,
   ds:"A competitor with better ethics and, relatedly, worse margins. They will not do what we do, which is why they will not be here long.",
@@ -951,7 +1059,7 @@ const TARGETS=[
  {id:"mutual",tier:2,sig:"❖",name:"The Mutual",resolve:240,
   ds:"Member-owned, inconveniently popular, and structurally incapable of charging what the market will bear. Demutualisation is presented to the members as liberation.",
   counter:{inc:0.10,unrest:1.6},
-  reward:{cost_:0.12, inc:1.15, cap:3}, rw:"Operations cost 12% less · income ×1.15 · +3 influence per quarter"},
+  reward:{cost_:0.12, inc:1.15, cap:3, tax:0.04}, rw:"Operations cost 12% less · income ×1.15 · dividend tax −4 points · +3 influence per quarter"},
  // ---- tier 3 : sovereigns -----------------------------------------------
  {id:"coastal",tier:3,sig:"⚑",name:"A Small Coastal Republic",resolve:375,
   ds:"Tourism, tuna and a currency peg it cannot afford to defend. The programme is agreed in a room its finance minister is not in.",
@@ -1091,7 +1199,7 @@ function reformYield(){
     Object.keys(S.dosDone).length + tok().gen + S.crises/2)/6);
   return Math.max(0,Math.floor((base+built)*chSeign()));
 }
-const canReform=()=>S.crises>=chapterNeed("reform") && reformYield()>0;
+const canReform=()=>chapterOpen("reform") && reformYield()>0;
 
 function buyCharter(c){
   if(hasCh(c.id)||S.seign<c.cost) return;
@@ -1152,7 +1260,7 @@ function freshRun(){
   return { debt:0, runTotal:0, clicks:0,
     gens:GENS.map(()=>0), ups:{},
     rate:0, ratePending:null, unrest:0,
-    revoltEnd:-1, revoltRate:0, brink:-1, mkt:freshMarket() };
+    revoltEnd:-1, revoltRate:0, brink:-1 };
 }
 function freshGame(){
   return Object.assign(freshRun(),{
@@ -1161,7 +1269,7 @@ function freshGame(){
     crises:0, revolts:0, allTime:0, bestRun:0,
     hiStreak:0, calmStreak:0,
     f_revolt:0, f_bail:0,
-    tok:freshToken(), war:freshWar(),
+    tok:freshToken(), war:freshWar(), mkt:freshMarket(),
     dosDone:{}, dosActive:[], dosClaim:{},
     disp:[], seenDos:false,
     era:1, reforms:0, seign:0, seignEarned:0, charter:{}, grandTotal:0
@@ -1333,6 +1441,18 @@ function buyUp(u){
   if(!upAvailable(u)||S.debt<u.cost) return;
   S.debt-=u.cost; S.ups[u.id]=true; dirty();
 }
+/* Cheapest first, so one click never spends the budget on the expensive one and
+   leaves three affordable ones behind. */
+function buyAllUps(){
+  let bought=0;
+  for(;;){
+    const next=UPS.filter(u=>upAvailable(u)&&S.debt>=u.cost).sort((a,b)=>a.cost-b.cost)[0];
+    if(!next) break;
+    S.debt-=next.cost; S.ups[next.id]=true; bought++;
+  }
+  if(bought) dispatch(bought+" doctrine"+(bought>1?"s":"")+" enacted in a single sitting.","");
+  dirty();
+}
 function buyCap(c){
   const k=capCost(c);
   if(S.assets<k) return;
@@ -1421,8 +1541,9 @@ function doCrisis(){
    "<p>Seized on collapse: <b style='color:#ffe58a'>"+fmt(y)+" Assets</b>"+
    (dosRewMult()>1?"":"")+"</p>"+
    "<p style='color:#4fd18b'>Recapitalisation: you restart with "+money(startingStake())+
-     (portfolioValue()>0?" (including "+money(portfolioValue()*0.25)+" recovered from the portfolio)":"")+
      ". The institution is never allowed to actually fail.</p>"+
+   (portfolioValue()>0?"<p style='color:#7fb2d9'>Your equity is held offshore and survives. "+
+     "The prices do not: hard assets will spike, everything else will fall.</p>":"")+
    "<p style='color:#8a8199'>Assets are paid on your best cycle, not per collapse — the next one must go deeper than this to pay again.</p>"+
    "<p style='color:#d92d43'>Wipes: debt, every operation"+(keepOnCrisis()?" (you retain 10%)":"")+
    ", every doctrine, your rate and your unrest. The Pyramid and your dossiers survive.</p>",
@@ -1433,11 +1554,13 @@ function doCrisis(){
       const carry={t:S.t,q:S.q,qAcc:S.qAcc,assets:S.assets,assetsEarned:S.assetsEarned,crisisAssets:S.crisisAssets,nodes:S.nodes,caps:S.caps,
         crises:S.crises,revolts:S.revolts,allTime:S.allTime,bestRun:S.bestRun,hiStreak:0,calmStreak:0,
         f_revolt:S.f_revolt,f_bail:S.f_bail,dosDone:S.dosDone,dosActive:S.dosActive,dosClaim:S.dosClaim,
-        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war};
-      const salvage=portfolioValue()*0.25;
+        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war,mkt:S.mkt};
+      /* Your equity is held offshore and survives the collapse — but the
+         collapse is precisely what moves those prices, in both directions. */
+      for(const x of SECTORS) S.mkt.px[x.id]=Math.max(4,S.mkt.px[x.id]*x.crash);
       S=Object.assign(freshRun(),carry);
       S.gens=kept;
-      S.debt=startingStake()+salvage;
+      S.debt=startingStake();
       $("#ir").value=0; $("#ir").max=maxRate();
       dispatch("CRISIS ENGINEERED — "+fmt(y)+" Assets seized. Recapitalised with "+money(S.debt)+".","evt");
       checkDossiers(); closeModal(); dirty();
@@ -1531,6 +1654,11 @@ function paint(){
       "you are at "+money(S.runTotal)+" ("+
       Math.min(99,Math.floor(S.runTotal/nextAssetBar()*100))+"%).";
 
+  const shut=CHAPTERS.filter(c=>!chapterOpen(c.id));
+  $("#nextObj").innerHTML = shut.length
+    ? "<span style='color:var(--gold)'>NEXT — Chapter "+shut[0].n+", "+shut[0].name+"</span><br>"+
+      chapterRoutes(shut[0].id).map(r=>"· "+routeTxt(r)).join("<br>")
+    : "<span style='color:var(--green)'>Every chapter is open.</span>";
   $("#assetBox").style.display=S.assetsEarned>0?"":"none";
   $("#asLbl").textContent=fmt(S.assets)+(S.assetsEarned>S.assets?" / "+fmt(S.assetsEarned)+" earned":"");
 
@@ -1590,13 +1718,17 @@ function renderOps(){
 
 function renderDoc(){
   const vis=UPS.filter(upVisible);
-  const key=vis.map(u=>u.id+(S.ups[u.id]?1:0)+(upAvailable(u)?"a":"l")).join();
+  const key=vis.map(u=>u.id+(S.ups[u.id]?1:0)+(upAvailable(u)?"a":"l")+(S.debt>=u.cost?"$":"-")).join();
   panel("Doc",key,()=>{
     if(!vis.length) return "<div class='empty'>No doctrine has been revealed to you yet.<br>Originate more debt — the Eye is watching your volume.</div>";
     const own=vis.filter(u=>S.ups[u.id]), av=vis.filter(u=>!S.ups[u.id]);
     const reqTxt=u=>u.req.debt!==undefined?"requires "+money(u.req.debt)+" originated all-time":
       "requires "+u.req.n+"× "+GENS.find(g=>g.id===u.req.gen).name;
-    return (av.length?"<div class='paneHead'><div class='sect'>Available Doctrines</div></div>"+av.map(u=>{
+    const canAll=UPS.filter(u=>upAvailable(u)&&S.debt>=u.cost);
+    return (av.length?"<div class='paneHead'><div class='sect'>Available Doctrines</div>"+
+      "<div class='mults'><button class='mult"+(canAll.length?" on":"")+"' id='buyAllDoc' "+
+      (canAll.length?"":"disabled")+">ENACT ALL"+(canAll.length?" ("+canAll.length+")":"")+"</button></div>"+
+      "</div>"+av.map(u=>{
         const lock=!upAvailable(u);
         return "<div class='item"+(lock?" locked":"")+"' data-u='"+u.id+"'><div class='sig'>"+u.sig+"</div>"+
           "<div><div class='nm'>"+u.name+"</div><div class='ds'>"+u.ds+"</div>"+
@@ -1609,6 +1741,7 @@ function renderDoc(){
   });
   $("#pDoc").querySelectorAll("[data-u]").forEach(el=>
     el.onclick=()=>buyUp(UPS.find(x=>x.id===el.dataset.u)));
+  const ba=document.getElementById("buyAllDoc"); if(ba) ba.onclick=buyAllUps;
   vis.forEach(u=>{
     const el=document.getElementById("uc_"+u.id);
     if(el){ el.textContent=money(u.cost); el.className="cost"+(S.debt<u.cost?" no":""); }
@@ -1706,20 +1839,32 @@ function spark(id){
 function renderMkt(){
   const open=chapterOpen("market");
   const m=mkt();
-  const key=open+"|"+S.crises+"|"+SECTORS.map(x=>m.px[x.id].toFixed(2)+":"+m.pos[x.id].toFixed(4)).join()+
-            "|"+Math.round(m.susp)+"|"+Math.round(S.debt)+"|"+(S.ratePending===null?"-":S.ratePending);
+  const key=open+"|"+S.crises+"|"+SECTORS.map(x=>m.px[x.id].toFixed(2)+":"+m.pos[x.id].toFixed(0)+
+              ":"+(S.debt>=buyCost(x.id,0.10)?1:0)+(S.debt>=buyCost(x.id,0.25)?1:0)+
+              (S.debt>=buyCost(x.id,1.00)?1:0)).join()+
+            "|"+Math.round(m.susp/5)+"|"+(S.ratePending===null?"-":S.ratePending)+
+            "|"+HAVENS.map(h=>havenOwned(h.id)?1:(S.debt>=h.cost*havenScale()?2:0)).join();
   panel("Mkt",key,()=>{
     if(!open){
-      const need=CHAPTERS.find(c=>c.id==="market").need;
       return "<div class='empty'>The trading floor is dark.<br><br>"+
-        "It opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
+        chapterRoutes("market").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
         "Nobody hands a desk to a man who has only collapsed things by accident.</div>";
     }
-    const pend=insiderRisk();
-    let h="<div class='paneHead'><div class='sect'>The Trading Floor — portfolio "+money(portfolioValue())+
-      " · realised "+money(m.realised)+"</div></div>"+
-      "<div class='ds' style='margin:-4px 0 10px'>Your rate decision lands next quarter. The market finds out then. "+
-      "You already know.</div>";
+    const pend=insiderRisk(), wp=worldPct(), t=taxRate();
+    let gross=0; for(const x of SECTORS) gross+=quarterDividend(x.id);
+    const net=gross*(1-t);
+
+    let h="<div class='paneHead'><div class='sect'>The Trading Floor</div></div>";
+    h+="<div class='eraBar'><div><div class='eraBig'>"+(wp*100).toFixed(2)+"% of world equity</div>"+
+       "<div class='ds'>portfolio "+money(portfolioValue())+" · realised "+money(m.realised)+
+       " · dividends banked "+money(m.divs)+"</div>"+
+       "<div class='meter' style='margin-top:7px'><i style='width:"+(wp*100)+
+       "%;background:linear-gradient(90deg,#3d6a86,#4fd18b)'></i></div></div>"+
+       "<div style='text-align:right'><div class='infBig'>"+money(net)+"</div>"+
+       "<div class='ds'>net dividends per quarter<br>"+money(gross)+" gross, "+
+       (t*100).toFixed(0)+"% withheld</div></div></div>";
+
     h+="<div class='"+(m.susp>=55?"warn":"box")+"' style='margin-bottom:10px'>"+
        "<div style='display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px'>"+
        "<span>REGULATORY ATTENTION</span><span>"+Math.round(m.susp)+" / 100</span></div>"+
@@ -1728,42 +1873,71 @@ function renderMkt(){
        "<div style='margin-top:6px;font-family:var(--mono);font-size:9.5px;color:"+(pend?"#e79aa6":"#8a8199")+"'>"+
        (pend?"A rate change to "+S.ratePending+"% is pending. Trading now is trading on it — every order adds attention."
             :"No decision pending. Orders placed now are merely opinions.")+"</div>"+
-       (m.fines>0?"<div style='margin-top:5px;font-family:var(--mono);font-size:9.5px;color:#8a8199'>Fines paid to date: "+
-         money(m.fines)+" · realised trading gains: "+money(m.realised)+"</div>":"")+
+       (m.fines>0?"<div style='margin-top:5px;font-family:var(--mono);font-size:9.5px;color:#8a8199'>Fines paid: "+
+         money(m.fines)+" · tax withheld to date: "+money(m.tax)+"</div>":"")+
        "</div>";
+
     h+=SECTORS.map(x=>{
       const hi=m.hist[x.id], prev=hi.length>1?hi[hi.length-2]:m.px[x.id];
-      const ch=(m.px[x.id]/prev-1)*100;
-      const val=m.pos[x.id]*m.px[x.id], basis=m.cost[x.id], pl=val-basis;
-      const held=m.pos[x.id]>1e-9;
+      const ch=(m.px[x.id]/prev-1)*100, own=ownPct(x.id);
+      const val=heldShares(x.id)*shareVal(x.id), pl=val-m.cost[x.id];
+      const held=heldShares(x.id)>0.5, div=quarterDividend(x.id);
+      const c10=buyCost(x.id,0.10), c25=buyCost(x.id,0.25), call=buyCost(x.id,1);
+      const cornered=freeFloat(x.id)<1;
       return "<div class='mkt"+(held?" held":"")+"'>"+
         "<div class='sig'>"+x.sig+"</div>"+
-        "<div><div class='nm'>"+x.name+"</div><div class='ds'>"+x.ds+"</div>"+
-        (held?"<div class='pos'>holding "+money(val)+" · "+(pl>=0?"+":"")+money(pl)+
-              " ("+(basis>0?((pl/basis)*100).toFixed(1):"0")+"%)</div>":"")+
+        "<div><div class='nm'>"+x.name+"  <span style='color:var(--ice);font-family:var(--mono);font-size:10px'>"+
+          (own*100).toFixed(1)+"% owned</span></div><div class='ds'>"+x.ds+"</div>"+
+        (held?"<div class='pos'>"+fmt(heldShares(x.id))+" shares · "+money(val)+" · "+
+              (pl>=0?"+":"")+money(pl)+" · dividend "+money(div*(1-taxRate()))+"/quarter net</div>":
+              "<div class='ds'>float "+fmt(freeFloat(x.id))+" shares · yield "+(x.div*100).toFixed(1)+
+              "% × health "+sectorHealth(x.id).toFixed(2)+"</div>")+
         "</div>"+
         "<div><div class='px'>"+m.px[x.id].toFixed(2)+"</div>"+
         "<div class='chg "+(ch>0.05?"up":ch<-0.05?"dn":"flat")+"'>"+(ch>=0?"+":"")+ch.toFixed(2)+"%</div>"+
         spark(x.id)+"</div>"+
         "<div class='sbtns'>"+
-          "<button class='sbtn' data-buy='"+x.id+"|0.1'  "+(S.debt<=0?"disabled":"")+">BUY 10%</button>"+
-          "<button class='sbtn' data-buy='"+x.id+"|0.25' "+(S.debt<=0?"disabled":"")+">BUY 25%</button>"+
-          "<button class='sbtn' data-buy='"+x.id+"|0.5'  "+(S.debt<=0?"disabled":"")+">BUY 50%</button>"+
-          "<button class='sbtn sell' data-sell='"+x.id+"|0.5' "+(held?"":"disabled")+">SELL ½</button>"+
+          (cornered?"<span class='ds' style='color:var(--green)'>cornered</span>":
+          "<button class='sbtn' data-buy='"+x.id+"|0.1'  "+(S.debt>=c10?"":"disabled")+
+            ">10% FLOAT<br>"+money(c10)+"</button>"+
+          "<button class='sbtn' data-buy='"+x.id+"|0.25' "+(S.debt>=c25?"":"disabled")+
+            ">25% FLOAT<br>"+money(c25)+"</button>"+
+          "<button class='sbtn' data-buy='"+x.id+"|1'    "+(S.debt>=call?"":"disabled")+
+            ">ALL<br>"+money(call)+"</button>")+
+          "<button class='sbtn sell' data-sell='"+x.id+"|0.25' "+(held?"":"disabled")+">SELL ¼</button>"+
           "<button class='sbtn sell' data-sell='"+x.id+"|1'   "+(held?"":"disabled")+">SELL ALL</button>"+
         "</div></div>";
     }).join("");
-    h+="<div class='ds' style='margin-top:14px;line-height:1.85'>Only realised gains count toward the cycle "+
-       "total that prices your next collapse. When you engineer a crisis the book is liquidated by the "+
-       "receivers, and you recover a quarter of it.</div>";
+
+    h+="<div class='paneHead' style='margin-top:18px'><div class='sect'>Tax Arrangements — effective rate "+
+       (t*100).toFixed(0)+"%</div></div>"+
+       "<div class='ds' style='margin:-4px 0 10px'>Dividends are withheld at "+(BASE_TAX*100).toFixed(0)+
+       "% before anything reaches you. Every arrangement below is entirely lawful, which is the point of "+
+       "having them drafted rather than invented. The floor is "+(MIN_TAX*100).toFixed(0)+
+       "% — something must get through, for appearances.</div>";
+    h+=HAVENS.map(hv=>{
+      const c=hv.cost*havenScale(), have=havenOwned(hv.id), can=S.debt>=c;
+      return "<div class='chart "+(have?"have":can?"":"lock")+"' data-h='"+hv.id+"'>"+
+        "<div><div class='cn'>"+hv.name+"</div><div class='cd'>"+hv.ds+"</div></div>"+
+        "<div class='cc'>"+(have?"✓ −"+(hv.cut*100).toFixed(0)+" pts":money(c)+"<br><span style='color:var(--muted)'>−"+
+        (hv.cut*100).toFixed(0)+" points</span>")+"</div></div>";
+    }).join("");
+
+    h+="<div class='ds' style='margin-top:14px;line-height:1.85'>Shares are held offshore and survive your "+
+       "collapses — the prices do not. Only realised gains and net dividends count toward the cycle total "+
+       "that prices your next crisis.</div>";
     return h;
   });
   $("#pMkt").querySelectorAll("[data-buy]").forEach(el=>el.onclick=()=>{
+    if(el.disabled) return;
     const [id,pct]=el.dataset.buy.split("|"); buyStock(id,+pct);
   });
   $("#pMkt").querySelectorAll("[data-sell]").forEach(el=>el.onclick=()=>{
+    if(el.disabled) return;
     const [id,pct]=el.dataset.sell.split("|"); sellStock(id,+pct);
   });
+  $("#pMkt").querySelectorAll("[data-h]").forEach(el=>el.onclick=()=>
+    buyHaven(HAVENS.find(x=>x.id===el.dataset.h)));
 }
 
 function tokSpark(h){
@@ -1781,12 +1955,13 @@ function renderTok(){
   const open=chapterOpen("token"), t=tok();
   const key=open+"|"+S.crises+"|"+t.live+"|"+t.gen+"|"+t.mcap.toExponential(3)+"|"+Math.round(t.hype)+"|"+
             Math.round(t.trust)+"|"+Math.round(t.holders)+"|"+Math.round(t.held)+"|"+t.staking+"|"+
-            Math.round(t.reserve)+"|"+Math.round(S.debt);
+            Math.round(t.reserve)+"|"+(S.debt>=tokLaunchCost()?1:0)+(S.debt>=tokPromoCost()?1:0)+
+            (S.debt>=tokSeedCost()?1:0);
   panel("Tok",key,()=>{
     if(!open){
-      const need=CHAPTERS.find(c=>c.id==="token").need;
       return "<div class='empty'>No issuance desk yet.<br><br>"+
-        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
+        chapterRoutes("token").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
         "Creating money out of debt is one thing. Creating it out of nothing at all takes a licence,<br>"+
         "or rather, it takes the confidence not to ask whether one is required.</div>";
     }
@@ -1862,12 +2037,12 @@ function renderTok(){
 function renderWar(){
   const open=chapterOpen("conflict"), w=war();
   const key=open+"|"+S.crises+"|"+Math.round(w.inf)+"|"+w.bought+"|"+Object.keys(w.won).join()+
-            "|"+TARGETS.map(t=>Math.round(w.applied[t.id]||0)).join()+"|"+Math.round(S.debt);
+            "|"+TARGETS.map(t=>Math.round(w.applied[t.id]||0)).join()+"|"+(S.debt>=infCost()?1:0);
   panel("War",key,()=>{
     if(!open){
-      const need=CHAPTERS.find(c=>c.id==="conflict").need;
       return "<div class='empty'>No one is fighting you yet.<br><br>"+
-        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
+        chapterRoutes("conflict").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
         "Below a certain size you are a nuisance. Above it you are a counterparty,<br>"+
         "and counterparties are dealt with rather than prosecuted.</div>";
     }
@@ -1920,13 +2095,13 @@ function renderRef(){
             "|"+reformYield()+"|"+canReform();
   panel("Ref",key,()=>{
     if(!seen){
-      const need=chapterNeed("reform");
       return "<div class='empty'>The unit of account is not yours yet.<br><br>"+
-        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Opens on <b style='color:var(--gold)'>any one</b> of:<br>"+
+        chapterRoutes("reform").map(r=>"&nbsp;· "+routeTxt(r)).join("<br>")+"<br><br>"+
         "Collapsing a bank is ordinary work. Collapsing the money everyone else keeps score in<br>"+
         "requires first becoming the only party still able to keep score.</div>";
     }
-    const y=reformYield(), ready=canReform(), need=chapterNeed("reform");
+    const y=reformYield(), ready=canReform();
     let h="<div class='paneHead'><div class='sect'>Monetary Reform — era "+S.era+"</div></div>"+
       "<div class='eraBar'><div><div class='eraBig'>◈ "+fmt(S.seign)+" seigniorage</div>"+
       "<div class='ds'>"+S.reforms+" reform"+(S.reforms===1?"":"s")+" behind you · "+
@@ -1935,7 +2110,7 @@ function renderRef(){
       "<div class='ds'>on offer for ending this era</div></div></div>"+
       "<button class='reformbtn' id='doReform' "+(ready?"":"disabled")+">"+
         (ready?"Reissue the Unit of Account  ▸  +"+fmt(y)+" ◈"
-              :"Requires "+need+" engineered crises — you have "+S.crises)+"</button>"+
+              :"Not yet — "+routeTxt(nextRoute("reform")))+"</button>"+
       "<div class='ds' style='margin:-6px 0 14px;line-height:1.8'>A reform erases everything a crisis "+
       "erases, and then the things a crisis spares: the Pyramid, the token, every conflict won, and your "+
       "Seized Assets. Every chapter closes. The Charter below is the only thing that crosses over — "+
@@ -1985,7 +2160,10 @@ function renderLed(){
     "<div class='stat'><span>Policy rate</span><b>×"+irMult().toFixed(2)+"</b></div>"+
     "<div class='stat'><span>Operation costs</span><b>×"+nodeCostMult().toFixed(2)+"</b></div>"+
     "<div class='stat'><span>Signature share of income</span><b>"+(clickShare()*100).toFixed(1)+"%</b></div>"+
+    "<div class='stat'><span>World equity owned</span><b>"+(worldPct()*100).toFixed(2)+"%</b></div>"+
     "<div class='stat'><span>Realised trading gains</span><b>"+money(mkt().realised)+"</b></div>"+
+    "<div class='stat'><span>Net dividends banked</span><b>"+money(mkt().divs)+"</b></div>"+
+    "<div class='stat'><span>Dividend tax rate</span><b>"+(taxRate()*100).toFixed(0)+"%</b></div>"+
     "<div class='stat'><span>Token proceeds (all generations)</span><b>"+money(tok().raised)+"</b></div>"+
     "<div class='stat'><span>Conflicts won</span><b>"+Object.keys(war().won).length+" / "+TARGETS.length+"</b></div>"+
     "<div class='stat'><span>Conflict income multiplier</span><b>×"+warInc().toFixed(2)+"</b></div>"+
@@ -1996,10 +2174,12 @@ function renderLed(){
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Chapters</div></div>"+
     "<div class='chapline open'><span><b>Chapter I</b> — Origination</span><span>open</span></div>"+
     CHAPTERS.map(c=>{
-      const nd=chapterNeed(c.id), ok=S.crises>=nd;
+      const ok=chapterOpen(c.id), rs=chapterRoutes(c.id);
       return "<div class='chapline "+(ok?"open":"shut")+"'><span><b>Chapter "+c.n+"</b> — "+c.name+
-        "<br><span style='color:#57506a'>"+c.ds+"</span></span><span style='white-space:nowrap'>"+
-        (ok?"open":S.crises+" / "+nd+" crises")+"</span></div>";
+        "<br><span style='color:#57506a'>"+c.ds+"</span>"+
+        (ok?"":"<br><span style='color:#8a8199'>any one of: "+
+          rs.map(r=>routeTxt(r)).join(" &nbsp;·&nbsp; ")+"</span>")+
+        "</span><span style='white-space:nowrap'>"+(ok?"open":"sealed")+"</span></div>";
     }).join("")+
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Dispatches</div></div>"+
     (S.disp.length?S.disp.map(d=>"<div class='disp "+d.c+"'><b>"+d.q+"</b> — "+d.t+"</div>").join("")
