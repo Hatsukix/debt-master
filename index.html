@@ -197,6 +197,92 @@
   #flash{position:fixed;inset:0;z-index:60;pointer-events:none;background:radial-gradient(circle,rgba(217,45,67,.3),transparent 70%);opacity:0;transition:opacity .6s}
   #flash.on{opacity:1}
 
+  /* ---- trading floor ---- */
+  .mkt{border:1px solid rgba(212,175,55,.16);background:rgba(20,17,28,.5);border-radius:3px;
+    padding:10px 12px;margin-bottom:7px;display:grid;grid-template-columns:26px 1fr 92px auto;gap:11px;align-items:center}
+  .mkt.held{border-color:rgba(127,178,217,.38);background:rgba(16,24,34,.5)}
+  .mkt .px{font-family:var(--mono);font-size:13px;color:var(--gold-hot);text-align:right}
+  .mkt .chg{font-family:var(--mono);font-size:10px;text-align:right;margin-top:2px}
+  .up{color:var(--green)} .dn{color:var(--blood-hot)} .flat{color:var(--muted)}
+  .mkt .pos{font-family:var(--mono);font-size:10px;color:var(--ice);margin-top:3px}
+  .spark{display:block;width:92px;height:26px}
+  .sbtns{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:230px}
+  .sbtn{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:4px 8px;border-radius:2px;
+    border:1px solid var(--edge);background:transparent;color:var(--muted);cursor:pointer}
+  .sbtn:hover:enabled{color:var(--gold-hot);border-color:var(--gold-dim)}
+  .sbtn.sell{color:#c98a94}
+  .sbtn.sell:hover:enabled{color:#fff;border-color:var(--blood-hot)}
+  .sbtn:disabled{opacity:.28;cursor:not-allowed}
+  .warn{border:1px solid rgba(217,45,67,.45);background:rgba(58,13,22,.4);border-radius:3px;
+    padding:9px 12px;margin-bottom:10px;font-family:var(--mono);font-size:10px;color:#e79aa6;line-height:1.7}
+  .chapline{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:10.5px;
+    padding:7px 0;border-bottom:1px dotted rgba(212,175,55,.13)}
+  .chapline.open{color:var(--green)} .chapline.shut{color:var(--muted)}
+  .chapline b{font-weight:400;color:var(--parch)}
+
+  /* ---- the token ---- */
+  .tokHead{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+    border:1px solid var(--edge);background:rgba(20,17,28,.6);border-radius:3px;padding:12px 14px;margin-bottom:10px}
+  .tokName{font-size:22px;letter-spacing:.16em;color:var(--gold-hot);text-transform:uppercase}
+  .tokName small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--muted);
+    text-transform:none;margin-top:3px}
+  .tokPx{font-family:var(--mono);font-size:20px;color:var(--gold-hot);text-align:right}
+  .gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:10px}
+  .gauge{border:1px solid var(--edge);background:rgba(20,17,28,.5);border-radius:3px;padding:8px 10px}
+  .gauge b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--gold-dim);
+    text-transform:uppercase;font-weight:400}
+  .gauge s{display:block;font-family:var(--mono);font-size:14px;color:var(--parch);text-decoration:none;margin:3px 0 5px}
+  .gauge .meter{height:6px}
+  .acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:8px;margin-top:10px}
+  .act{border:1px solid var(--edge);background:rgba(20,17,28,.55);border-radius:3px;padding:10px 12px;
+    cursor:pointer;transition:.14s}
+  .act:hover:not(.off){border-color:var(--gold-dim);background:rgba(31,26,42,.75)}
+  .act.off{opacity:.32;cursor:not-allowed}
+  .act.rug{border-color:#5e1420;background:rgba(58,13,22,.35)}
+  .act.rug:hover:not(.off){border-color:var(--blood-hot);box-shadow:0 0 18px rgba(217,45,67,.22)}
+  .act .an{font-size:13.5px;color:var(--parch)}
+  .act .ad{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:4px;line-height:1.55}
+  .act .ac{font-family:var(--mono);font-size:11px;color:var(--gold-hot);margin-top:5px}
+
+  /* ---- conflicts ---- */
+  .infBar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+    border:1px solid var(--edge);background:rgba(20,17,28,.6);border-radius:3px;padding:11px 13px;margin-bottom:11px}
+  .infBig{font-family:var(--mono);font-size:20px;color:var(--gold-hot)}
+  .war{border:1px solid rgba(212,175,55,.16);background:rgba(20,17,28,.5);border-radius:3px;
+    padding:11px 13px;margin-bottom:8px}
+  .war.eng{border-color:rgba(217,45,67,.4);background:rgba(40,14,20,.4)}
+  .war.won{border-color:rgba(79,209,139,.32);background:rgba(18,34,26,.32);opacity:.8}
+  .war.shut{opacity:.32}
+  .war .wt{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .war .wn{font-size:15px;color:var(--gold-hot)}
+  .war .wr{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+  .war .wd{font-family:var(--mono);font-size:10.5px;color:var(--parch);line-height:1.7;opacity:.9;margin-top:5px}
+  .war .wc{font-family:var(--mono);font-size:10px;color:#e79aa6;margin-top:6px}
+  .war .wg{font-family:var(--mono);font-size:10px;color:var(--green);margin-top:3px}
+  .war .wf{display:flex;gap:8px;align-items:center;margin-top:9px}
+  .tierHead{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-dim);
+    border-bottom:1px solid var(--edge);padding-bottom:5px;margin:16px 0 9px}
+
+  /* ---- monetary reform ---- */
+  .eraBar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border:1px solid var(--edge);
+    background:linear-gradient(180deg,rgba(30,22,14,.7),rgba(15,12,20,.7));border-radius:3px;padding:13px 15px;margin-bottom:12px}
+  .eraBig{font-family:var(--mono);font-size:21px;color:var(--gold-hot)}
+  .chart{border:1px solid rgba(212,175,55,.18);background:rgba(20,17,28,.55);border-radius:3px;
+    padding:10px 12px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+    cursor:pointer;transition:.14s}
+  .chart:hover:not(.have):not(.lock){border-color:var(--gold-dim);background:rgba(31,26,42,.75)}
+  .chart.have{border-color:rgba(79,209,139,.35);background:rgba(18,34,26,.35);cursor:default}
+  .chart.lock{opacity:.4;cursor:not-allowed}
+  .chart .cn{font-size:14px;color:var(--parch)}
+  .chart .cd{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:4px;line-height:1.6}
+  .chart .cc{font-family:var(--mono);font-size:12px;color:var(--gold-hot);white-space:nowrap}
+  .chart.have .cc{color:var(--green)}
+  .reformbtn{width:100%;margin:4px 0 14px;padding:13px;cursor:pointer;border-radius:3px;
+    background:linear-gradient(180deg,#2e1408,#140806);border:1px solid #7a4a12;color:#ffd79a;
+    font-family:var(--serif);letter-spacing:.22em;text-transform:uppercase;font-size:13px}
+  .reformbtn:enabled:hover{border-color:var(--gold);color:#fff;box-shadow:0 0 26px rgba(212,175,55,.3)}
+  .reformbtn:disabled{opacity:.32;cursor:not-allowed}
+
   /* ---- title screen ---- */
   #intro{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at 50% 42%,#151020 0%,#050408 70%);padding:20px;overflow-y:auto}
@@ -251,7 +337,7 @@
 
 <div id="shell">
   <header>
-    <div class="brand">Debt Master<small>Chapter I — The Pyramid Awakens</small></div>
+    <div class="brand">Debt Master<small id="chapLbl">Chapter I — The Pyramid Awakens</small></div>
     <div id="qclock"><div class="q" id="qLbl">Q1 · Y1</div><div class="bar"><i id="qBar"></i></div></div>
     <div class="ticker"><span id="tick"></span></div>
     <button class="hbtn" id="btnSave">Export</button>
@@ -309,12 +395,20 @@
         <div class="tab" data-p="Doc">Doctrines <span class="dot" id="dDoc" style="display:none"></span></div>
         <div class="tab" data-p="Dos">Dossiers <span class="dot" id="dDos" style="display:none"></span></div>
         <div class="tab" data-p="Pyr">The Pyramid <span class="dot" id="dPyr" style="display:none"></span></div>
+        <div class="tab" data-p="Mkt">Market <span class="dot" id="dMkt" style="display:none"></span></div>
+        <div class="tab" data-p="Tok">Token <span class="dot" id="dTok" style="display:none"></span></div>
+        <div class="tab" data-p="War">Conflicts <span class="dot" id="dWar" style="display:none"></span></div>
+        <div class="tab" data-p="Ref">Reform <span class="dot" id="dRef" style="display:none"></span></div>
         <div class="tab" data-p="Led">Ledger</div>
       </div>
       <div class="pane on" id="pOps"></div>
       <div class="pane" id="pDoc"></div>
       <div class="pane" id="pDos"></div>
       <div class="pane" id="pPyr"></div>
+      <div class="pane" id="pMkt"></div>
+      <div class="pane" id="pTok"></div>
+      <div class="pane" id="pWar"></div>
+      <div class="pane" id="pRef"></div>
       <div class="pane" id="pLed"></div>
     </section>
   </main>
@@ -361,7 +455,8 @@
        mechanisms of financial/political capture, using unnamed archetypes.
    ========================================================================== */
 
-const QSEC = 120;          // seconds of game time per fiscal quarter
+const QSEC = 120;
+const BRINK = 2.5;         // seconds the meter sits visibly full before a revolt lands          // seconds of game time per fiscal quarter
 const COSTGROW = 1.14;     // per-unit cost growth
 
 /* ---------- formatting ---------- */
@@ -560,10 +655,465 @@ const HEADLINES=[
  "Ombudsman appointed to investigate the ombudsman. Both report to us."
 ];
 
+/* ==========================================================================
+   CHAPTER II — THE TRADING FLOOR
+   The whole point: you set the policy rate, and it only lands next quarter.
+   That gap is the edge. Positioning inside it is insider trading, so trading
+   while a rate change is pending raises Regulatory Attention.
+   ========================================================================== */
+const SECTORS=[
+ {id:"hous",sig:"⌂",name:"Housing & Development",beta:-2.0,unr:-0.3,crash:0.40,
+  ds:"Everything anyone will ever owe on a roof. Moves hardest against your rate."},
+ {id:"cred",sig:"₪",name:"Consumer Credit Index",beta:-1.5,unr:-0.5,crash:0.35,
+  ds:"Priced on the assumption that nobody reads. Falls when borrowing costs bite."},
+ {id:"bank",sig:"▤",name:"Retail Banking Index",beta:1.3,unr:-0.2,crash:0.45,
+  ds:"Our esteemed peers. A rate rise is very good for them, and therefore for us."},
+ {id:"secu",sig:"⌖",name:"Security & Logistics",beta:0.2,unr:1.0,crash:0.80,
+  ds:"Sells fences, cameras and reassurance. Quietly indexed to public anger."},
+ {id:"hard",sig:"⚜",name:"Hard Assets",beta:-0.5,unr:0.6,crash:1.70,
+  ds:"Metal in a vault. Tedious, until it is the only thing still worth anything."}
+];
+const CHAPTERS=[
+ {id:"market",  n:"II", name:"The Trading Floor", need:3,
+  ds:"A desk, a wire, and one quarter of advance notice on your own decisions."},
+ {id:"token",   n:"III",name:"The Token",         need:7,
+  ds:"Issue your own money. Own the float. Choose the hour it stops being worth anything."},
+ {id:"conflict",n:"IV", name:"Conflicts",         need:11,
+  ds:"Inquiries first, then rival institutions, then sovereigns. In that order of difficulty."},
+ {id:"reform",  n:"V",  name:"Monetary Reform",   need:16,
+  ds:"Collapse the system itself and reissue it in your own name. Everything resets. You do not."}
+];
+const chapterOpen=id=>S.crises>=chapterNeed(id);
+const SUSP_PER_TRADE=9;      // attention earned for trading on a pending decision
+const SUSP_DECAY=2.0;        // per quarter
+
+function freshMarket(){
+  const m={px:{},pos:{},cost:{},hist:{},susp:0,realised:0,fines:0};
+  for(const x of SECTORS){ m.px[x.id]=100; m.pos[x.id]=0; m.cost[x.id]=0; m.hist[x.id]=[100]; }
+  return m;
+}
+const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); return S.mkt; };
+function portfolioValue(){
+  const m=mkt(); let v=0;
+  for(const x of SECTORS) v+=m.pos[x.id]*m.px[x.id];
+  return v;
+}
+function insiderRisk(){ return S.ratePending!==null && S.ratePending!==S.rate; }
+
+function moveMarket(rateDelta){
+  const m=mkt();
+  for(const x of SECTORS){
+    const policy = x.beta*rateDelta*0.016;
+    const anger  = x.unr*(S.unrest/100-0.35)*0.07;
+    const noise  = (Math.random()-0.5)*0.09;
+    const drift  = 0.006;
+    m.px[x.id]=Math.max(4, m.px[x.id]*(1+policy+anger+noise+drift));
+    const h=m.hist[x.id]; h.push(m.px[x.id]); if(h.length>26) h.shift();
+  }
+  /* Check the threshold BEFORE decaying, otherwise a quarter that ends at 101
+     decays to 99 and the investigation can never fire at all. */
+  if(m.susp>=100) investigation();
+  else m.susp=Math.max(0,m.susp-SUSP_DECAY*warSuspDecay());
+}
+function investigation(){
+  const m=mkt();
+  const fine=Math.max(1,S.debt*0.12*warFine());
+  S.debt-=fine; m.fines+=fine; m.susp=35;
+  const q=income()*QSEC;
+  dispatch("Enforcement action settled — fine "+money(fine)+
+    ". Quarterly income "+money(q)+". Net effect on strategy: none.","evt");
+  showModal("A Settlement Has Been Reached",
+    "<p>The authority found irregular positioning ahead of your own rate announcements. "+
+    "It has issued a fine, accepted no admission of wrongdoing, and named no individual.</p>"+
+    "<p style='color:#d92d43'>Fine paid: "+money(fine)+"</p>"+
+    "<p style='color:#4fd18b'>Originated this quarter: "+money(q)+"</p>"+
+    "<p style='color:#8a8199'>The press release calls it a landmark penalty. Your treasurer has "+
+    "already logged it under cost of doing business, which is where it belongs.</p>",
+    [{t:"Regrettable",f:closeModal}]);
+}
+function buyStock(id,pct){
+  const m=mkt(), amt=S.debt*pct;
+  if(amt<=0) return;
+  m.pos[id]+=amt/m.px[id]; m.cost[id]+=amt; S.debt-=amt;
+  if(insiderRisk()) m.susp=Math.min(120,m.susp+SUSP_PER_TRADE);
+  dirty();
+}
+function sellStock(id,pct){
+  const m=mkt(), units=m.pos[id]*pct;
+  if(units<=0) return;
+  const value=units*m.px[id], basis=m.cost[id]*pct;
+  m.pos[id]-=units; m.cost[id]-=basis;
+  S.debt+=value;
+  const profit=value-basis;
+  m.realised+=profit;
+  /* only the gain counts as newly originated — moving capital in and out must
+     not inflate the cycle total that prestige is priced on */
+  if(profit>0){ S.runTotal+=profit; S.allTime+=profit; if(S.runTotal>S.bestRun) S.bestRun=S.runTotal; }
+  if(insiderRisk()) m.susp=Math.min(120,m.susp+SUSP_PER_TRADE);
+  dirty();
+}
+
+/* ==========================================================================
+   CHAPTER III — THE TOKEN
+   You are not trading someone else's asset now, you are issuing your own.
+   Supply is a number you choose, hype is a number you buy, and trust is the
+   only one you cannot simply purchase. Every generation ends the same way;
+   the only decision is when.
+   ========================================================================== */
+const TOKEN_NAMES=[
+ {n:"OBOLUS",  t:"OBL", pitch:"A frictionless settlement layer for the unbanked, who were not consulted."},
+ {n:"VERITAS", t:"VRT", pitch:"Truth, notarised on-chain, at four hundred transactions a second."},
+ {n:"SOLIDUS", t:"SLD", pitch:"Algorithmically stable. The algorithm is a promise, and promises are code."},
+ {n:"AEON",    t:"AEO", pitch:"A store of value for the long term, launched last Tuesday."},
+ {n:"PARAGON", t:"PGN", pitch:"Governance is decentralised across the community. We hold the community."},
+ {n:"NEXUM",   t:"NXM", pitch:"Backed one-to-one by instruments we also issue. The circle is the innovation."},
+ {n:"TRUSTLESS",t:"TRL",pitch:"No trust required, which is fortunate, given the circumstances."}
+];
+const TOK_SUPPLY=1e6;
+const TOK_SAT=22;           // adoption ceiling, in multiples of the launch cap
+const TOK_GROWTH=0.55;      /* Swept over saturation x growth: the cap peaks around x49 at q40, but
+                               promotion costs scale with the cap, so the best exit is q28 for ~22
+                               quarters of income. You sell while it still looks healthy. */
+function freshToken(){ return {live:false,gen:0,idx:0,mcap:0,launchMcap:0,px:0,held:0,
+  hype:0,trust:0,holders:0,reserve:0,staking:false,raised:0,soldQ:0,hist:[],dead:false}; }
+const tok=()=>{ if(!S.tok) S.tok=freshToken(); return S.tok; };
+const tokPx=()=>{ const t=tok(); return t.mcap/TOK_SUPPLY; };
+const tokPublicPct=()=>1-tok().held/TOK_SUPPLY;
+const tokValue=()=>{ const t=tok(); return t.live? (t.held/TOK_SUPPLY)*t.mcap : 0; };
+function tokLaunchCost(){ return Math.max(1e4, income()*QSEC*0.8*Math.pow(2.1,tok().gen)); }
+function tokPromoCost(){ return Math.max(1e3, tok().mcap*0.020); }
+function tokSeedCost(){  return Math.max(1e3, tok().mcap*0.040); }
+
+function launchToken(){
+  const t=tok(), cost=tokLaunchCost();
+  if(t.live||S.debt<cost) return;
+  S.debt-=cost;
+  t.live=true; t.dead=false; t.gen++;
+  t.idx=(t.gen-1)%TOKEN_NAMES.length;
+  t.launchMcap=Math.max(1, income()*QSEC*10);
+  t.mcap=t.launchMcap; t.px=tokPx();
+  t.held=TOK_SUPPLY*0.80;              // the pre-mine, disclosed on page 40
+  t.hype=25; t.trust=55; t.holders=140; t.reserve=0; t.staking=false;
+  t.soldQ=0; t.hist=[t.px];
+  dispatch("Token generation "+t.gen+" launched — "+TOKEN_NAMES[t.idx].n+". Founder allocation: 80%.","win");
+  dirty();
+}
+function promote(){
+  const t=tok(), c=tokPromoCost();
+  if(!t.live||S.debt<c) return;
+  S.debt-=c; t.hype=Math.min(100,t.hype+18); dirty();
+}
+function seedLiquidity(){
+  const t=tok(), c=tokSeedCost();
+  if(!t.live||S.debt<c) return;
+  S.debt-=c; t.reserve+=c; t.trust=Math.min(100,t.trust+9); dirty();
+}
+function toggleStaking(){
+  const t=tok(); if(!t.live) return;
+  t.staking=!t.staking;
+  dispatch(t.staking?"Staking programme opened. Yield is paid from the reserve, and from the next depositor."
+                    :"Staking programme suspended pending a review by us.","");
+  dirty();
+}
+/* Selling is the whole tension: it is the only way to realise anything, and it
+   is the thing that destroys the price and the trust you spent §  building. */
+function tokSell(pct){
+  const t=tok(); if(!t.live) return;
+  const units=t.held*pct; if(units<=0) return;
+  const slip=1-Math.min(0.55,pct*0.6);
+  const proceeds=(units/TOK_SUPPLY)*t.mcap*slip;
+  t.held-=units;
+  // dumping a share f of total supply takes the cap down with it, hard
+  const f=units/TOK_SUPPLY;
+  t.mcap=Math.max(t.launchMcap*0.005, t.mcap*(1-Math.min(0.80,f*1.4)));
+  t.px=tokPx();
+  t.trust=Math.max(0,t.trust-pct*75);
+  t.soldQ+=pct; t.raised+=proceeds;
+  S.debt+=proceeds; S.runTotal+=proceeds; S.allTime+=proceeds;
+  if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
+  dirty();
+}
+function rugValue(){ const t=tok(); return (t.held/TOK_SUPPLY)*t.mcap*0.35 + t.reserve; }
+function rugPull(){
+  const t=tok(); if(!t.live) return;
+  const proceeds=rugValue();
+  showModal("Exit Liquidity",
+    "<p>You sell the entire founder allocation into whatever bids remain, empty the reserve, "+
+    "and let the support wallet go quiet. The community manager is told nothing, so that his "+
+    "reassurances stay sincere.</p>"+
+    "<p style='color:#ffe58a'>Realised: "+money(proceeds)+"</p>"+
+    "<p style='color:#d92d43'>"+TOKEN_NAMES[t.idx].n+" ends here. Civil unrest +18 — a great many people "+
+    "held this. Regulatory attention +30.</p>"+
+    "<p style='color:#8a8199'>Generation "+(t.gen+1)+" will cost more to launch. It will also be believed.</p>",
+    [{t:"Not Yet",f:closeModal},{t:"Pull It",f:()=>{
+      S.debt+=proceeds; S.runTotal+=proceeds; S.allTime+=proceeds;
+      if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
+      t.raised+=proceeds;
+      t.live=false; t.dead=true; t.held=0; t.mcap=t.launchMcap*0.005; t.px=tokPx();
+      t.trust=0; t.hype=0; t.holders=0; t.reserve=0; t.staking=false;
+      S.unrest=Math.min(100,S.unrest+18);
+      mkt().susp=Math.min(120,mkt().susp+30);
+      dispatch("RUG — "+TOKEN_NAMES[t.idx].n+" collapsed. "+money(proceeds)+" realised. The forum is asking questions.","evt");
+      closeModal(); dirty();
+    }}]);
+}
+function moveToken(){
+  const t=tok(); if(!t.live) return;
+  const trustF=t.trust/100;
+  // adoption compounds only while the thing is both hyped and believed
+  const inflow=t.holders*(t.hype/100)*0.30*trustF*(t.staking?1.7:1)+t.hype*0.8;
+  t.holders=Math.max(0,t.holders+inflow-t.holders*0.09);
+  /* Saturation: every hype cycle eventually runs out of people who have not
+     heard of it yet. Without this, holding forever is strictly optimal and the
+     token has no peak to time. */
+  const sat=1/(1+t.mcap/(t.launchMcap*TOK_SAT));
+  const growth=TOK_GROWTH*(t.hype/100)*trustF*sat + 0.03*(trustF-0.4) - t.soldQ*1.2 - 0.05;
+  t.mcap=Math.max(t.launchMcap*0.005, t.mcap*Math.max(0.35,Math.min(1.9,1+growth)));
+  t.px=tokPx();
+  if(t.soldQ===0) t.trust=Math.min(100,t.trust+2.5);
+  t.hype*=0.82;
+  if(t.staking){
+    // the yield is owed on everything the public holds, so it grows as you cash out
+    const owed=tokPublicPct()*t.mcap*0.05;
+    t.reserve-=owed;
+    if(t.reserve<=0){
+      t.reserve=0; t.trust=Math.max(0,t.trust-22);
+      dispatch("Staking yield missed — the reserve is empty. Withdrawals have been paused for your protection.","evt");
+    }
+  }
+  if(t.trust<=3 && t.holders<25 && t.mcap<=t.launchMcap*0.03){
+    t.live=false; t.dead=true;
+    dispatch(TOKEN_NAMES[t.idx].n+" has gone to zero on its own. No action was required.","evt");
+  }
+  t.soldQ=0;
+  t.hist.push(t.px); if(t.hist.length>26) t.hist.shift();
+}
+
+/* ==========================================================================
+   CHAPTER IV — CONFLICTS
+   Not combat. A siege. Influence accrues a few points a quarter and cannot be
+   rushed with money alone, so every campaign is measured in quarters and you
+   cannot fight on three fronts at once. Everything you besiege pushes back for
+   as long as it is still standing.
+   ========================================================================== */
+const TARGETS=[
+ // ---- tier 1 : inquiries -------------------------------------------------
+ {id:"committee",tier:1,sig:"⚖",name:"The Select Committee",resolve:22,
+  ds:"Three hours of televised questioning, an adjournment for lunch, and a final report that thanks you for your candour. It is scheduled opposite a match.",
+  counter:{susp:5,unrest:0.8},
+  reward:{suspDecay:2, cap:2}, rw:"Attention decays twice as fast · +2 influence per quarter"},
+ {id:"newsroom",tier:1,sig:"⌁",name:"The Investigative Desk",resolve:40,
+  ds:"Four reporters, one leaked drive, and a proprietor who takes your calls. The story runs, wins a prize, and changes nothing — but it runs.",
+  counter:{susp:4,unrest:1.4},
+  reward:{calm:0.10, cap:2}, rw:"Unrest accrues 10% slower · +2 influence per quarter"},
+ {id:"classaction",tier:1,sig:"☩",name:"The Class Action",resolve:65,
+  ds:"Forty thousand claimants, eleven years, and an average payout roughly the price of a sandwich. The firm that brought it is now on retainer.",
+  counter:{susp:3,unrest:1.0,inc:0.06},
+  reward:{fine:0.40, cap:2}, rw:"Settlements cost 60% less · +2 influence per quarter"},
+ // ---- tier 2 : rival institutions ---------------------------------------
+ {id:"meridian",tier:2,sig:"▦",name:"Meridian Trust",resolve:110,
+  ds:"A competitor with better ethics and, relatedly, worse margins. They will not do what we do, which is why they will not be here long.",
+  counter:{inc:0.09,unrest:0.5},
+  reward:{inc:1.18, cap:3}, rw:"Absorbed — all income ×1.18 · +3 influence per quarter"},
+ {id:"halberd",tier:2,sig:"⚜",name:"Halberd Frères",resolve:170,
+  ds:"An old house. Two centuries of portraits, one century of complacency, and a balance sheet held together by the assumption that nobody would dare.",
+  counter:{inc:0.12,susp:3},
+  reward:{inc:1.25, cap:3}, rw:"Absorbed — all income ×1.25 · +3 influence per quarter"},
+ {id:"mutual",tier:2,sig:"❖",name:"The Mutual",resolve:240,
+  ds:"Member-owned, inconveniently popular, and structurally incapable of charging what the market will bear. Demutualisation is presented to the members as liberation.",
+  counter:{inc:0.10,unrest:1.6},
+  reward:{cost_:0.12, inc:1.15, cap:3}, rw:"Operations cost 12% less · income ×1.15 · +3 influence per quarter"},
+ // ---- tier 3 : sovereigns -----------------------------------------------
+ {id:"coastal",tier:3,sig:"⚑",name:"A Small Coastal Republic",resolve:375,
+  ds:"Tourism, tuna and a currency peg it cannot afford to defend. The programme is agreed in a room its finance minister is not in.",
+  counter:{unrest:2.2,inc:0.10},
+  reward:{inc:1.4, cap:4}, rw:"All income ×1.4 · +4 influence per quarter"},
+ {id:"union",tier:3,sig:"⬢",name:"A Member of the Currency Union",resolve:575,
+  ds:"It cannot devalue, it cannot default and it cannot leave. Having removed all three exits, we are able to negotiate in good faith.",
+  counter:{unrest:2.6,inc:0.12,susp:4},
+  reward:{inc:1.55, slot:1, cap:4}, rw:"All income ×1.55 · +1 dossier slot · +4 influence per quarter"},
+ {id:"nuclear",tier:3,sig:"☢",name:"A Nuclear-Armed Debtor",resolve:850,
+  ds:"The only client who can end the conversation rather than the contract. Terms are therefore generous, and the generosity is mutual, and nobody writes any of it down.",
+  counter:{unrest:3.4,inc:0.15,susp:5},
+  reward:{inc:2.0, thresh:6, cap:5}, rw:"All income ×2 · crises stageable 6 points earlier · +5 influence per quarter"}
+];
+const INF_BASE_CAP=6;        // influence you may place per quarter before any wins
+const INF_DECAY=0.05;        // a siege you stop pressing slips back
+const INF_TAX=0.35;          // filling the cap always costs this share of a quarter's income
+
+function freshWar(){ return {inf:0,bought:0,applied:{},won:{},touched:{}}; }
+const war=()=>{ if(!S.war) S.war=freshWar(); return S.war; };
+const warWon=id=>!!war().won[id];
+function warReward(k){ let v=(k==="inc"||k==="fine")?1:0;
+  for(const t of TARGETS) if(warWon(t.id)&&t.reward[k]!==undefined){
+    if(k==="inc"||k==="fine") v*=t.reward[k]; else v+=t.reward[k]; }
+  return v; }
+const warInc      = ()=>warReward("inc");
+const warCostMult = ()=>{ let m=1; for(const t of TARGETS) if(warWon(t.id)&&t.reward.cost_) m*=(1-t.reward.cost_); return m; };
+const warCalm     = ()=>{ let m=1; for(const t of TARGETS) if(warWon(t.id)&&t.reward.calm) m*=(1-t.reward.calm); return m; };
+const warSlots    = ()=>warReward("slot");
+const warThresh   = ()=>warReward("thresh");
+const warFine     = ()=>warReward("fine");
+const warSuspDecay= ()=>{ let m=1; for(const t of TARGETS) if(warWon(t.id)&&t.reward.suspDecay) m*=t.reward.suspDecay; return m; };
+function infPerQuarter(){ let c=INF_BASE_CAP; for(const t of TARGETS) if(warWon(t.id)&&t.reward.cap) c+=t.reward.cap; return c; }
+function infCost(){ return Math.max(1e3, income()*QSEC*INF_TAX/infPerQuarter()); }
+/* A target is engaged while it has pressure on it and has not fallen. */
+const warEngaged=id=>!warWon(id)&&(war().applied[id]||0)>0;
+function warDebuff(){ let m=1;
+  for(const t of TARGETS) if(warEngaged(t.id)&&t.counter.inc) m*=(1-t.counter.inc);
+  return m; }
+function tierOpen(tier){
+  if(tier===1) return true;
+  const prev=TARGETS.filter(t=>t.tier===tier-1&&warWon(t.id)).length;
+  return prev>=2;
+}
+function buyInfluence(n){
+  const w=war(), room=infPerQuarter()-w.bought;
+  const k=Math.min(n,room); if(k<=0) return;
+  const cost=infCost()*k; if(S.debt<cost) return;
+  S.debt-=cost; w.inf+=k; w.bought+=k; dirty();
+}
+function commit(id,n){
+  const w=war(), t=TARGETS.find(x=>x.id===id);
+  if(!t||warWon(id)||!tierOpen(t.tier)) return;
+  const k=Math.min(n,w.inf); if(k<=0) return;
+  w.inf-=k; w.applied[id]=(w.applied[id]||0)+k; w.touched[id]=1;
+  if(w.applied[id]>=t.resolve){
+    w.won[id]=true; delete w.applied[id];
+    S.war.inf+=Math.floor(t.resolve*0.15);
+    dispatch("Conflict resolved — "+t.name+" has folded. "+t.rw+".","win");
+    showModal(t.name+" Has Folded",
+      "<p>"+t.ds+"</p><p style='color:#4fd18b'>"+t.rw+"</p>"+
+      "<p style='color:#8a8199'>Spoils: "+Math.floor(t.resolve*0.15)+" influence returned. "+
+      "Nobody involved will describe what happened as a defeat, and in the relevant sense they are correct.</p>",
+      [{t:"Next",f:closeModal}]);
+  }
+  dirty();
+}
+function warQuarter(){
+  const w=war(); w.bought=0;
+  w.inf+=1;                                   // standing, accrued whether you use it or not
+  for(const t of TARGETS){
+    if(warWon(t.id)) continue;
+    const a=w.applied[t.id]||0;
+    if(a<=0) continue;
+    if(t.counter.susp)   mkt().susp=Math.min(120,mkt().susp+t.counter.susp);
+    if(t.counter.unrest) S.unrest=Math.min(100,S.unrest+t.counter.unrest);
+    if(!w.touched[t.id]) w.applied[t.id]=Math.max(0,a*(1-INF_DECAY));   // pressure slips
+  }
+  w.touched={};
+}
+
+/* ==========================================================================
+   CHAPTER V — MONETARY REFORM
+   The meta-prestige. A crisis collapses your institution; a reform collapses
+   the unit of account itself and reissues it in your name. Everything below
+   goes: operations, doctrines, the Pyramid, the token, the conflicts, even the
+   Seized Assets. Only the Charter survives, because the Charter is the thing
+   that says what money is.
+   ========================================================================== */
+const CHARTER=[
+ {id:"denom",cost:1,name:"Denominated in Your Name",inc:3,
+  ds:"The notes carry your signature, and the signature is the only thing behind them. All income ×3."},
+ {id:"ledger",cost:3,name:"The Inherited Ledger",ops:25,
+  ds:"A new era, and yet the files were already open. Every era begins with 25 of each of the first three instruments."},
+ {id:"olddoc",cost:6,name:"The Old Doctrines Stand",docs:6,
+  ds:"Nothing was repealed. Nobody thought to ask. Every era begins with the first six doctrines already enacted."},
+ {id:"standing",cost:11,name:"Standing Instructions",half:1,
+  ds:"The desks were never dismantled, only relabelled. Every chapter opens at half the usual number of crises."},
+ {id:"board",cost:16,name:"The Currency Board",maxrate:35,calm:0.25,
+  ds:"You set the ceiling, so there is no ceiling. Rate ceiling starts at 35% and unrest accrues 25% slower."},
+ {id:"second",cost:22,name:"The Second Signature",share:0.03,
+  ds:"One hand issues, the other countersigns, and both are yours. Every signature pays an extra 3% of a second's income."},
+ {id:"perpetual",cost:30,name:"The Perpetual Charter",keep:0.25,
+  ds:"A reform that does not inconvenience the reformers. You keep a quarter of your Seized Assets through every reform."},
+ {id:"reserve",cost:42,name:"Reserve Currency Status",seign:1.6,
+  ds:"Other people hold your liabilities as their savings, and nobody has ever called that a debt. Seigniorage +60%."},
+ {id:"final",cost:60,name:"No Further Reforms Required",inc:5,
+  ds:"The arrangement is now simply how things are, and how things are is not something anyone gets to vote on. All income ×5."}
+];
+const DENOM={id:"denomX",base:25,grow:1.42,name:"An Additional Denomination",
+  ds:"Another note, another zero, another rounding in your favour. All income ×1.25 per denomination."};
+
+const hasCh=id=>!!(S.charter&&S.charter[id]);
+function chSum(k){ let v=0; for(const c of CHARTER) if(hasCh(c.id)&&c[k]) v+=c[k]; return v; }
+function chProd(k){ let v=1; for(const c of CHARTER) if(hasCh(c.id)&&c[k]) v*=c[k]; return v; }
+const denomLvl  = ()=>(S.charter&&S.charter.denomX)||0;
+const denomCost = ()=>Math.ceil(DENOM.base*Math.pow(DENOM.grow,denomLvl()));
+const chInc     = ()=>chProd("inc")*Math.pow(1.25,denomLvl());
+const chCalm    = ()=>{ let m=1; for(const c of CHARTER) if(hasCh(c.id)&&c.calm) m*=(1-c.calm); return m; };
+const chShare   = ()=>chSum("share");
+const chSeign   = ()=>chProd("seign");
+const chKeep    = ()=>chSum("keep");
+const chMaxRate = ()=>hasCh("board")?35:0;
+
+function chapterNeed(id){
+  const n=CHAPTERS.find(c=>c.id===id).need;
+  return hasCh("standing")?Math.ceil(n/2):n;
+}
+/* Seigniorage is priced on the era you are ending: how much you originated,
+   how many collapses you staged, and how much of the machine you actually built. */
+function reformYield(){
+  /* Driven mostly by how much the era originated, which compounds era on era as
+     the Charter thickens. The completion term is deliberately small: finishing
+     the content of one era should not buy half the Charter outright. */
+  const base=Math.floor(Math.pow(Math.max(0,S.allTime)/1e12,0.22)*2.2);
+  const built=Math.floor((Object.keys(war().won).length + Object.keys(S.nodes).length +
+    Object.keys(S.dosDone).length + tok().gen + S.crises/2)/6);
+  return Math.max(0,Math.floor((base+built)*chSeign()));
+}
+const canReform=()=>S.crises>=chapterNeed("reform") && reformYield()>0;
+
+function buyCharter(c){
+  if(hasCh(c.id)||S.seign<c.cost) return;
+  const i=CHARTER.indexOf(c);
+  if(i>0 && !hasCh(CHARTER[i-1].id)) return;      // the charter is written in order
+  S.seign-=c.cost; S.charter[c.id]=true;
+  if(c.maxrate) $("#ir").max=maxRate();
+  dispatch("Charter extended — "+c.name+".","win");
+  dirty();
+}
+function buyDenom(){
+  const k=denomCost();
+  if(S.seign<k) return;
+  S.seign-=k; S.charter.denomX=denomLvl()+1;
+  dispatch("A new denomination enters circulation.","win");
+  dirty();
+}
+/* Starting bonuses are re-applied at the beginning of every era. */
+function applyCharterStart(){
+  if(hasCh("ledger")) for(let i=0;i<3;i++) S.gens[i]=chSum("ops");
+  if(hasCh("olddoc")) UPS.slice(0,chSum("docs")).forEach(u=>S.ups[u.id]=true);
+  S.debt=Math.max(S.debt, 60*(1+S.era));
+}
+function doReform(){
+  if(!canReform()) return;
+  const y=reformYield(), keep=Math.floor(S.assetsEarned*chKeep());
+  showModal("Reissue the Unit of Account?",
+    "<p>You do not collapse the institution this time. You collapse the money.</p>"+
+    "<p>Every contract is redenominated overnight at a rate you set, in a currency you issue, "+
+    "and the difference is not stolen from anyone in particular — it is simply the difference.</p>"+
+    "<p style='color:#ffe58a'>Seigniorage claimed: "+fmt(y)+"</p>"+
+    "<p style='color:#d92d43'>Erased: debt, every operation, every doctrine, the Pyramid, the token, "+
+    "every conflict won, and your Seized Assets"+(keep>0?" (you retain "+fmt(keep)+")":"")+
+    ". Every chapter closes and must be reopened.</p>"+
+    "<p style='color:#8a8199'>The Charter survives. The Charter is the part that says what money is.</p>",
+    [{t:"Not Yet",f:closeModal},{t:"Reissue Everything",f:()=>{
+      const meta={era:S.era+1, reforms:S.reforms+1, seign:S.seign+y, seignEarned:S.seignEarned+y,
+        charter:S.charter, grandTotal:S.grandTotal+S.allTime, started:S.started, disp:S.disp};
+      S=Object.assign(freshGame(),meta);
+      S.assets=keep; S.assetsEarned=keep;
+      applyCharterStart();
+      $("#ir").max=maxRate(); $("#ir").value=0;
+      dispatch("MONETARY REFORM — era "+S.era+" begins. "+fmt(y)+" seigniorage claimed.","evt");
+      closeModal(); dirty();
+    }}]);
+}
+
 /* ---------- balance tuning ----------
    Single place to re-pace the game. Verified with a headless 24h simulation. */
-const RATE_SCALE=2.2;    // output per operation
-const DOC_SCALE=0.55;    // doctrine prices and unlock thresholds
+const RATE_SCALE=1.76;   // output per operation
+const DOC_SCALE=0.66;    // doctrine prices and unlock thresholds
 GENS.forEach(g=>{ g.rate*=RATE_SCALE; });
 UPS.forEach(u=>{ u.cost=Math.round(u.cost*DOC_SCALE);
   if(u.req.debt!==undefined) u.req.debt=Math.round(u.req.debt*DOC_SCALE); });
@@ -573,7 +1123,7 @@ function freshRun(){
   return { debt:0, runTotal:0, clicks:0,
     gens:GENS.map(()=>0), ups:{},
     rate:0, ratePending:null, unrest:0,
-    revoltEnd:-1, revoltRate:0 };
+    revoltEnd:-1, revoltRate:0, brink:-1, mkt:freshMarket() };
 }
 function freshGame(){
   return Object.assign(freshRun(),{
@@ -582,8 +1132,10 @@ function freshGame(){
     crises:0, revolts:0, allTime:0, bestRun:0,
     hiStreak:0, calmStreak:0,
     f_revolt:0, f_bail:0,
+    tok:freshToken(), war:freshWar(),
     dosDone:{}, dosActive:[], dosClaim:{},
-    disp:[], seenDos:false
+    disp:[], seenDos:false,
+    era:1, reforms:0, seign:0, seignEarned:0, charter:{}, grandTotal:0
   });
 }
 let S=freshGame();
@@ -594,17 +1146,29 @@ const has=id=>!!S.nodes[id];
 function nodeSum(k){ let v=0; for(const n of ALLNODES) if(has(n.id)&&n[k]) v+=n[k]; return v; }
 function nodeProd(k){ let v=1; for(const n of ALLNODES) if(has(n.id)&&n[k]) v*=n[k]; return v; }
 const nodeInc      = ()=>nodeProd("inc");
-const nodeCostMult = ()=>{ let m=1; for(const n of ALLNODES) if(has(n.id)&&n.cost_) m*=(1-n.cost_); return m; };
+const nodeCostMult = ()=>{ let m=1; for(const n of ALLNODES) if(has(n.id)&&n.cost_) m*=(1-n.cost_); return m*warCostMult(); };
 const nodeCalm     = ()=>{ let m=1; for(const n of ALLNODES) if(has(n.id)&&n.calm) m*=(1-n.calm); return m; };
-const maxRate      = ()=>has("s2")?35:25;
+const maxRate      = ()=>Math.max(has("s2")?35:25, chMaxRate());
 const revoltFactor = ()=>has("s4")?0.70:0.40;
-const crisisThresh = ()=>has("s5")?20:35;
-const dosSlots     = ()=>1+nodeSum("slot");
+const crisisThresh = ()=>Math.max(10,(has("s5")?20:35)-warThresh());
+const dosSlots     = ()=>1+nodeSum("slot")+warSlots();
 const dosRewMult   = ()=>(has("i3")?1.5:1)*capDrew();
 const keepOnCrisis  =()=>has("c5")?0.10:0;
 const noLag        = ()=>has("i2");
 
 /* ---------- doctrine effects ---------- */
+const SHARE_UPS=[
+ {id:"wetink",sig:"❥",name:"The Wet-Ink Bonus",cost:9e5,kind:"share",v:0.004,
+  ds:"A signature made in person is worth more, for reasons nobody has ever audited. Each signature also pays 0.4% of a second's income.",req:{debt:6e5}},
+ {id:"nightshift",sig:"☾",name:"Signing Room Night Shift",cost:7e7,kind:"share",v:0.006,
+  ds:"The room never closes, because somewhere it is always a reasonable hour to borrow. +0.6% per signature.",req:{debt:5e7}},
+ {id:"everypen",sig:"⑂",name:"Every Pen a Branch",cost:1.4e10,kind:"share",v:0.010,
+  ds:"Each pen is now a legal entity, a cost centre and a small tax jurisdiction. +1% per signature.",req:{debt:9e9}},
+ {id:"thehand",sig:"✋",name:"The Hand That Signs",cost:8e12,kind:"share",v:0.020,
+  ds:"It is no longer clear whose hand it is. The signature is valid regardless. +2% per signature.",req:{debt:5e12}}
+];
+UPS.push.apply(UPS,SHARE_UPS);
+
 function upProd(kind,g){
   let m=1;
   for(const u of UPS) if(S.ups[u.id]&&u.kind===kind&&(!g||u.g===g)) m*=u.v;
@@ -620,14 +1184,22 @@ const irMult    = ()=>1+S.rate*0.10;
 const revolting = ()=>S.t < S.revoltEnd;
 function income(){
   let base=0;
-  GENS.forEach((g,i)=>{ base += S.gens[i]*g.rate*genMult(g.id); });
-  let v=base*globMult()*irMult()*nodeInc()*capInc();
+  GENS.forEach((g,i)=>{ base += S.gens[i]*g.rate*genMult(g.id)*tierMult(i); });
+  let v=base*globMult()*irMult()*nodeInc()*capInc()*warInc()*warDebuff()*chInc();
   if(revolting()) v*=revoltFactor();
   return v;
 }
-const perClick = ()=>1*clickMult();
+const clickShare=()=>{ let v=chShare(); for(const u of UPS) if(S.ups[u.id]&&u.kind==="share") v+=u.v; return v; };
+const perClick = ()=>1*clickMult()+income()*clickShare();
+/* Owning more of one instrument makes each unit better — the reward for going
+   deep on a line instead of spreading thin. */
+const TIERS=[10,25,50,100,150,200,300,450];
+const TIER_MULT=1.55;
+function tierCount(i){ let n=0; for(const t of TIERS) if(S.gens[i]>=t) n++; return n; }
+function tierMult(i){ return Math.pow(TIER_MULT,tierCount(i)); }
+function nextTier(i){ for(const t of TIERS) if(S.gens[i]<t) return t; return null; }
 const CALM_FLOOR=0.30;
-const calmTotal = ()=>Math.max(CALM_FLOOR, upCalm()*nodeCalm()*capCalm());
+const calmTotal = ()=>Math.max(CALM_FLOOR, upCalm()*nodeCalm()*capCalm()*warCalm()*chCalm());
 const unrestPerSec = ()=>S.rate*0.035*calmTotal()-0.18;
 
 function unitCost(i,owned){ return GENS[i].cost*nodeCostMult()*Math.pow(COSTGROW,owned); }
@@ -648,9 +1220,10 @@ function buyQty(i){
 /* Assets are a function of your BEST cycle, minus what previous collapses
    already paid out. Collapsing early and often therefore yields nothing —
    the only way forward is to go deeper than last time. */
+const YIELD_COEF=2.0, YIELD_EXP=0.285;
 function assetsDeserved(){
   if(S.runTotal<1.5e6) return 0;
-  return Math.floor(Math.pow(S.runTotal/1e6,0.30)*2.2);
+  return Math.floor(Math.pow(S.runTotal/1e6,YIELD_EXP)*YIELD_COEF);
 }
 function crisisYield(){ return Math.max(0, assetsDeserved()-S.crisisAssets); }
 /* On collapse the institution is recapitalised: without this the player would
@@ -658,7 +1231,7 @@ function crisisYield(){ return Math.max(0, assetsDeserved()-S.crisisAssets); }
    what this game is for. */
 function startingStake(){ return Math.max(60, 40*Math.sqrt(S.bestRun)); }
 /* runTotal the next collapse must beat before it pays anything at all */
-function nextAssetBar(){ return 1e6*Math.pow((S.crisisAssets+1)/2.2,1/0.30); }
+function nextAssetBar(){ return 1e6*Math.pow((S.crisisAssets+1)/YIELD_COEF,1/YIELD_EXP); }
 
 /* ---------- visibility ---------- */
 const genVisible = i => i===0 || S.gens[i-1]>0 || S.allTime>=GENS[i].cost*0.3;
@@ -693,13 +1266,25 @@ function dispatch(txt,cls){
   if(S.disp.length>60) S.disp.pop();
 }
 
+/* Below a million the float shows the exact figure — "+§204,567" rather than a
+   3-significant-figure "+§205K", which read as if clicks were paying less than
+   they credited. Positions are jittered so a held space bar shows every click
+   instead of stacking them all on one pixel. */
+function clickText(v){
+  if(v<1e6) return "+§"+Math.round(v).toLocaleString("en-US");
+  return "+"+money(v);
+}
 function doClick(ev){
   const v=perClick(); gain(v); S.clicks++;
-  const f=document.createElement("div");
-  f.className="float"; f.textContent="+"+money(v);
-  f.style.left=((ev&&ev.clientX)||window.innerWidth*.22)+"px";
-  f.style.top=(((ev&&ev.clientY)||window.innerHeight*.5)-12)+"px";
-  $("#floats").appendChild(f); setTimeout(()=>f.remove(),1150);
+  const host=$("#floats");
+  if(host.childElementCount<45){
+    const f=document.createElement("div");
+    f.className="float"; f.textContent=clickText(v);
+    const jx=(Math.random()-0.5)*74, jy=(Math.random()-0.5)*30;
+    f.style.left=(((ev&&ev.clientX)||window.innerWidth*.22)+jx)+"px";
+    f.style.top=((((ev&&ev.clientY)||window.innerHeight*.5)-12)+jy)+"px";
+    host.appendChild(f); setTimeout(()=>f.remove(),1150);
+  }
   paint();
 }
 function buyGen(i){
@@ -732,10 +1317,14 @@ function endQuarter(){
   const inc=income();
   if(S.rate>=16) S.hiStreak++; else S.hiStreak=0;
   if(S.unrest<25) S.calmStreak++; else S.calmStreak=0;
+  const oldRate=S.rate;
   if(S.ratePending!==null){
     S.rate=S.ratePending; S.ratePending=null;
     dispatch("Policy meeting concluded — rate set to "+S.rate+"%.","");
   }
+  if(chapterOpen("market")) moveMarket(S.rate-oldRate);
+  if(chapterOpen("token"))  moveToken();
+  if(chapterOpen("conflict")) warQuarter();
   S.q++;
   dispatch("Originated "+money(inc*QSEC)+" · unrest "+S.unrest.toFixed(0)+"% · rate "+S.rate+"%.","");
   checkDossiers();
@@ -795,6 +1384,9 @@ function doCrisis(){
    "<p>You pull the liquidity, call the loans, and let the arrangement fall over in a direction chosen well in advance.</p>"+
    "<p>Seized on collapse: <b style='color:#ffe58a'>"+fmt(y)+" Assets</b>"+
    (dosRewMult()>1?"":"")+"</p>"+
+   "<p style='color:#4fd18b'>Recapitalisation: you restart with "+money(startingStake())+
+     (portfolioValue()>0?" (including "+money(portfolioValue()*0.25)+" recovered from the portfolio)":"")+
+     ". The institution is never allowed to actually fail.</p>"+
    "<p style='color:#8a8199'>Assets are paid on your best cycle, not per collapse — the next one must go deeper than this to pay again.</p>"+
    "<p style='color:#d92d43'>Wipes: debt, every operation"+(keepOnCrisis()?" (you retain 10%)":"")+
    ", every doctrine, your rate and your unrest. The Pyramid and your dossiers survive.</p>",
@@ -805,12 +1397,13 @@ function doCrisis(){
       const carry={t:S.t,q:S.q,qAcc:S.qAcc,assets:S.assets,assetsEarned:S.assetsEarned,crisisAssets:S.crisisAssets,nodes:S.nodes,caps:S.caps,
         crises:S.crises,revolts:S.revolts,allTime:S.allTime,bestRun:S.bestRun,hiStreak:0,calmStreak:0,
         f_revolt:S.f_revolt,f_bail:S.f_bail,dosDone:S.dosDone,dosActive:S.dosActive,dosClaim:S.dosClaim,
-        disp:S.disp,seenDos:S.seenDos};
+        disp:S.disp,seenDos:S.seenDos,tok:S.tok,war:S.war};
+      const salvage=portfolioValue()*0.25;
       S=Object.assign(freshRun(),carry);
       S.gens=kept;
-      S.debt=startingStake();
+      S.debt=startingStake()+salvage;
       $("#ir").value=0; $("#ir").max=maxRate();
-      dispatch("CRISIS ENGINEERED — "+fmt(y)+" Assets seized from the wreckage.","evt");
+      dispatch("CRISIS ENGINEERED — "+fmt(y)+" Assets seized. Recapitalised with "+money(S.debt)+".","evt");
       checkDossiers(); closeModal(); dirty();
    }}]);
 }
@@ -860,6 +1453,8 @@ function paint(){
   $("#rate").style.color=revolting()?"#d92d43":"var(--green)";
   $("#signSub").textContent="+"+money(perClick())+" per signature";
   $("#qLbl").textContent=qName(S.q);
+  const open=CHAPTERS.filter(c=>S.crises>=c.need).pop();
+  $("#chapLbl").textContent = (S.reforms>0?"Era "+S.era+" · ":"")+(open ? "Chapter "+open.n+" — "+open.name : "Chapter I — The Pyramid Awakens");
   $("#qBar").style.width=(S.qAcc/QSEC*100)+"%";
 
   const shown=S.ratePending!==null?S.ratePending:S.rate;
@@ -876,6 +1471,11 @@ function paint(){
   $("#unLbl").textContent=u.toFixed(0)+"%";
   $("#unBar").style.width=u+"%";
   $("#unMeter").classList.toggle("hot",u>=80);
+  if(S.brink>0){
+    $("#unHint").innerHTML="<span style='color:#d92d43'>AT THE BRINK — "+
+      Math.max(0,(S.brink-S.t)).toFixed(1)+"s before it goes. Cut the rate or harvest it now.</span>";
+    $("#unMeter").classList.add("hot");
+  } else
   $("#unHint").textContent = u<15?"The public is docile. Raise rates.":
     u<40?"Grumbling on the radio. Nothing structural.":
     u<70?"Placards, op-eds, an unhelpful number of torches.":
@@ -899,28 +1499,42 @@ function paint(){
 
   const dosTab=document.querySelector('.tab[data-p="Dos"]');
   dosTab.classList.toggle("off",!dosUnlocked());
+  document.querySelector('.tab[data-p="Mkt"]').classList.toggle("off",!chapterOpen("market"));
+  document.querySelector('.tab[data-p="Tok"]').classList.toggle("off",!chapterOpen("token"));
+  document.querySelector('.tab[data-p="War"]').classList.toggle("off",!chapterOpen("conflict"));
+  const refSeen=chapterOpen("reform")||S.reforms>0;
+  document.querySelector('.tab[data-p="Ref"]').classList.toggle("off",!refSeen);
+  $("#dRef").style.display=(refSeen&&(canReform()||CHARTER.some(c=>{
+    const i=CHARTER.indexOf(c); return !hasCh(c.id)&&S.seign>=c.cost&&(i===0||hasCh(CHARTER[i-1].id));})))
+    ?"inline-block":"none";
+  $("#dWar").style.display=(chapterOpen("conflict")&&war().inf>0)?"inline-block":"none";
+  $("#dTok").style.display=(chapterOpen("token")&&(!tok().live||tok().hype<12))?"inline-block":"none";
+  $("#dMkt").style.display=(chapterOpen("market")&&mkt().susp>=60)?"inline-block":"none";
   $("#dOps").style.display=GENS.some((g,i)=>genVisible(i)&&S.debt>=bulkCost(i,1))?"inline-block":"none";
   $("#dDoc").style.display=UPS.some(x=>upAvailable(x)&&S.debt>=x.cost)?"inline-block":"none";
   $("#dDos").style.display=(dosUnlocked()&&(Object.keys(S.dosClaim).length||
     (S.dosActive.length<dosSlots()&&dosOfferable().some(d=>!S.dosActive.includes(d.id)))))?"inline-block":"none";
   $("#dPyr").style.display=ALLNODES.some(n=>nodeState(n)==="can")?"inline-block":"none";
 
-  renderOps(); renderDoc(); renderDos(); renderPyr(); renderLed();
+  renderOps(); renderDoc(); renderDos(); renderPyr(); renderMkt(); renderTok(); renderWar(); renderRef(); renderLed();
   force=false;
 }
 
 function renderOps(){
   const vis=GENS.map((g,i)=>i).filter(genVisible);
-  const key=vis.join()+"|"+S.gens.join()+"|"+Object.keys(S.ups).join()+"|"+buyMode+"|"+Object.keys(S.nodes).join();
+  const key=vis.join()+"|"+S.gens.join()+"|"+Object.keys(S.ups).join()+"|"+buyMode+"|"+Object.keys(S.nodes).join()+"|"+GENS.map((g,i)=>tierCount(i)).join();
   panel("Ops",key,()=>
     "<div class='paneHead'><div class='sect'>Instruments of Origination</div><div class='mults'>"+
     [1,10,100,"max"].map(m=>"<button class='mult"+(buyMode===m?" on":"")+"' data-m='"+m+"'>"+
       (m==="max"?"MAX":"×"+m)+"</button>").join("")+"</div></div>"+
     vis.map(i=>{
-      const g=GENS[i], each=g.rate*genMult(g.id);
+      const g=GENS[i], each=g.rate*genMult(g.id)*tierMult(i);
       return "<div class='item' data-g='"+i+"'><div class='sig'>"+g.sig+"</div>"+
         "<div><div class='nm'>"+g.name+"</div><div class='ds'>"+g.ds+"</div>"+
-        "<div class='rt'>"+fmt(each)+"/s each"+(S.gens[i]?" · "+fmt(each*S.gens[i])+"/s total":"")+"</div></div>"+
+        "<div class='rt'>"+fmt(each)+"/s each"+(S.gens[i]?" · "+fmt(each*S.gens[i])+"/s total":"")+
+          (tierCount(i)?" · <span style='color:var(--gold-hot)'>tier ×"+fmt(tierMult(i))+"</span>":"")+
+          (nextTier(i)!==null?" <span style='color:#8a8199'>(×"+TIER_MULT+" at "+nextTier(i)+")</span>":"")+
+        "</div></div>"+
         "<div class='buy'><div class='cost' id='gc"+i+"'></div><div class='cnt' id='gn"+i+"'></div></div></div>";
     }).join("")
   );
@@ -1043,10 +1657,280 @@ function renderPyr(){
     el.onclick=()=>buyCap(CAPS.find(c=>c.id===el.dataset.c)));
 }
 
+function spark(id){
+  const h=mkt().hist[id]; if(h.length<2) return "";
+  const lo=Math.min.apply(null,h), hi=Math.max.apply(null,h), rng=(hi-lo)||1;
+  const pts=h.map((v,i)=>(i/(h.length-1)*90+1).toFixed(1)+","+(24-(v-lo)/rng*22).toFixed(1)).join(" ");
+  const rising=h[h.length-1]>=h[0];
+  return "<svg class='spark' viewBox='0 0 92 26' preserveAspectRatio='none'>"+
+    "<polyline points='"+pts+"' fill='none' stroke='"+(rising?"#4fd18b":"#d92d43")+
+    "' stroke-width='1.4' vector-effect='non-scaling-stroke'/></svg>";
+}
+function renderMkt(){
+  const open=chapterOpen("market");
+  const m=mkt();
+  const key=open+"|"+S.crises+"|"+SECTORS.map(x=>m.px[x.id].toFixed(2)+":"+m.pos[x.id].toFixed(4)).join()+
+            "|"+Math.round(m.susp)+"|"+Math.round(S.debt)+"|"+(S.ratePending===null?"-":S.ratePending);
+  panel("Mkt",key,()=>{
+    if(!open){
+      const need=CHAPTERS.find(c=>c.id==="market").need;
+      return "<div class='empty'>The trading floor is dark.<br><br>"+
+        "It opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Nobody hands a desk to a man who has only collapsed things by accident.</div>";
+    }
+    const pend=insiderRisk();
+    let h="<div class='paneHead'><div class='sect'>The Trading Floor — portfolio "+money(portfolioValue())+
+      " · realised "+money(m.realised)+"</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>Your rate decision lands next quarter. The market finds out then. "+
+      "You already know.</div>";
+    h+="<div class='"+(m.susp>=55?"warn":"box")+"' style='margin-bottom:10px'>"+
+       "<div style='display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px'>"+
+       "<span>REGULATORY ATTENTION</span><span>"+Math.round(m.susp)+" / 100</span></div>"+
+       "<div class='meter' style='margin-top:5px'><i style='width:"+Math.min(100,m.susp)+
+       "%;background:linear-gradient(90deg,#3d6a86,#d92d43)'></i></div>"+
+       "<div style='margin-top:6px;font-family:var(--mono);font-size:9.5px;color:"+(pend?"#e79aa6":"#8a8199")+"'>"+
+       (pend?"A rate change to "+S.ratePending+"% is pending. Trading now is trading on it — every order adds attention."
+            :"No decision pending. Orders placed now are merely opinions.")+"</div>"+
+       (m.fines>0?"<div style='margin-top:5px;font-family:var(--mono);font-size:9.5px;color:#8a8199'>Fines paid to date: "+
+         money(m.fines)+" · realised trading gains: "+money(m.realised)+"</div>":"")+
+       "</div>";
+    h+=SECTORS.map(x=>{
+      const hi=m.hist[x.id], prev=hi.length>1?hi[hi.length-2]:m.px[x.id];
+      const ch=(m.px[x.id]/prev-1)*100;
+      const val=m.pos[x.id]*m.px[x.id], basis=m.cost[x.id], pl=val-basis;
+      const held=m.pos[x.id]>1e-9;
+      return "<div class='mkt"+(held?" held":"")+"'>"+
+        "<div class='sig'>"+x.sig+"</div>"+
+        "<div><div class='nm'>"+x.name+"</div><div class='ds'>"+x.ds+"</div>"+
+        (held?"<div class='pos'>holding "+money(val)+" · "+(pl>=0?"+":"")+money(pl)+
+              " ("+(basis>0?((pl/basis)*100).toFixed(1):"0")+"%)</div>":"")+
+        "</div>"+
+        "<div><div class='px'>"+m.px[x.id].toFixed(2)+"</div>"+
+        "<div class='chg "+(ch>0.05?"up":ch<-0.05?"dn":"flat")+"'>"+(ch>=0?"+":"")+ch.toFixed(2)+"%</div>"+
+        spark(x.id)+"</div>"+
+        "<div class='sbtns'>"+
+          "<button class='sbtn' data-buy='"+x.id+"|0.1'  "+(S.debt<=0?"disabled":"")+">BUY 10%</button>"+
+          "<button class='sbtn' data-buy='"+x.id+"|0.25' "+(S.debt<=0?"disabled":"")+">BUY 25%</button>"+
+          "<button class='sbtn' data-buy='"+x.id+"|0.5'  "+(S.debt<=0?"disabled":"")+">BUY 50%</button>"+
+          "<button class='sbtn sell' data-sell='"+x.id+"|0.5' "+(held?"":"disabled")+">SELL ½</button>"+
+          "<button class='sbtn sell' data-sell='"+x.id+"|1'   "+(held?"":"disabled")+">SELL ALL</button>"+
+        "</div></div>";
+    }).join("");
+    h+="<div class='ds' style='margin-top:14px;line-height:1.85'>Only realised gains count toward the cycle "+
+       "total that prices your next collapse. When you engineer a crisis the book is liquidated by the "+
+       "receivers, and you recover a quarter of it.</div>";
+    return h;
+  });
+  $("#pMkt").querySelectorAll("[data-buy]").forEach(el=>el.onclick=()=>{
+    const [id,pct]=el.dataset.buy.split("|"); buyStock(id,+pct);
+  });
+  $("#pMkt").querySelectorAll("[data-sell]").forEach(el=>el.onclick=()=>{
+    const [id,pct]=el.dataset.sell.split("|"); sellStock(id,+pct);
+  });
+}
+
+function tokSpark(h){
+  if(!h||h.length<2) return "";
+  const lo=Math.min.apply(null,h), hi=Math.max.apply(null,h), rng=(hi-lo)||1;
+  const pts=h.map((v,i)=>(i/(h.length-1)*158+1).toFixed(1)+","+(40-(v-lo)/rng*36).toFixed(1)).join(" ");
+  return "<svg style='display:block;width:160px;height:42px' viewBox='0 0 160 42' preserveAspectRatio='none'>"+
+    "<polyline points='"+pts+"' fill='none' stroke='"+(h[h.length-1]>=h[0]?"#4fd18b":"#d92d43")+
+    "' stroke-width='1.4' vector-effect='non-scaling-stroke'/></svg>";
+}
+function bar(v,col){ return "<div class='meter'><i style='width:"+Math.max(0,Math.min(100,v))+
+  "%;background:"+col+"'></i></div>"; }
+
+function renderTok(){
+  const open=chapterOpen("token"), t=tok();
+  const key=open+"|"+S.crises+"|"+t.live+"|"+t.gen+"|"+t.mcap.toExponential(3)+"|"+Math.round(t.hype)+"|"+
+            Math.round(t.trust)+"|"+Math.round(t.holders)+"|"+Math.round(t.held)+"|"+t.staking+"|"+
+            Math.round(t.reserve)+"|"+Math.round(S.debt);
+  panel("Tok",key,()=>{
+    if(!open){
+      const need=CHAPTERS.find(c=>c.id==="token").need;
+      return "<div class='empty'>No issuance desk yet.<br><br>"+
+        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Creating money out of debt is one thing. Creating it out of nothing at all takes a licence,<br>"+
+        "or rather, it takes the confidence not to ask whether one is required.</div>";
+    }
+    if(!t.live){
+      const cost=tokLaunchCost(), can=S.debt>=cost;
+      const nx=TOKEN_NAMES[t.gen%TOKEN_NAMES.length];
+      return "<div class='paneHead'><div class='sect'>Issuance Desk"+
+        (t.gen?" — generation "+(t.gen+1):"")+"</div></div>"+
+        (t.dead?"<div class='warn'>"+TOKEN_NAMES[t.idx].n+" is over. Total realised across all generations: "+
+          money(t.raised)+". The holders have formed a group chat, then a class action, then a smaller group chat.</div>":"")+
+        "<div class='dos'><div class='code'>PROSPECTUS — "+nx.t+"</div><div class='ti'>"+nx.n+"</div>"+
+        "<div class='bd'>"+nx.pitch+"<br><br>Supply is fixed at 1,000,000 tokens, of which you retain 800,000 "+
+        "as a founder allocation, disclosed on page 40 of a document hosted at an address that expires.<br><br>"+
+        "Hype is bought. Trust is earned and then spent. Selling does both at once, in the wrong direction.</div>"+
+        "<div class='goal'>▸ Launch cost: "+money(cost)+" — you have "+money(S.debt)+"</div></div>"+
+        "<div class='acts'><div class='act"+(can?"":" off")+"' data-t='launch'>"+
+        "<div class='an'>Launch "+nx.n+"</div><div class='ad'>Mint the supply, publish the paper, open the channel.</div>"+
+        "<div class='ac'>"+money(cost)+"</div></div></div>";
+    }
+    const nm=TOKEN_NAMES[t.idx], mcap=t.mcap, yours=tokValue();
+    const pc=tokPromoCost(), sc=tokSeedCost();
+    return "<div class='tokHead'><div><div class='tokName'>"+nm.n+
+        "<small>$"+nm.t+" · generation "+t.gen+" · "+nm.pitch+"</small></div></div>"+
+      "<div><div class='tokPx'>§"+(t.px<1?t.px.toPrecision(3):fmt(t.px))+"</div>"+
+      "<div class='ds' style='text-align:right'>market cap "+money(mcap)+"</div>"+tokSpark(t.hist)+"</div></div>"+
+      "<div class='gauges'>"+
+        "<div class='gauge'><b>Hype</b><s>"+t.hype.toFixed(0)+" / 100</s>"+
+          bar(t.hype,"linear-gradient(90deg,#8c7423,#ffe58a)")+"</div>"+
+        "<div class='gauge'><b>Trust</b><s>"+t.trust.toFixed(0)+" / 100</s>"+
+          bar(t.trust,"linear-gradient(90deg,#7a1420,#4fd18b)")+"</div>"+
+        "<div class='gauge'><b>Holders</b><s>"+fmt(t.holders)+"</s>"+
+          "<div class='ds'>"+(t.staking?"staking open":"no yield offered")+"</div></div>"+
+        "<div class='gauge'><b>Your allocation</b><s>"+money(yours)+"</s>"+
+          "<div class='ds'>"+((t.held/TOK_SUPPLY)*100).toFixed(1)+"% of supply · realised "+money(t.raised)+"</div></div>"+
+        "<div class='gauge'><b>Reserve</b><s>"+money(t.reserve)+"</s>"+
+          "<div class='ds'>"+(t.staking?"draining every quarter":"idle")+"</div></div>"+
+      "</div>"+
+      (t.staking&&t.reserve<=0?"<div class='warn'>The reserve is empty and the yield is being paid out of nothing. "+
+        "Trust falls every quarter until you refill it or close the programme.</div>":"")+
+      (t.trust<20?"<div class='warn'>Trust is gone. Holders are leaving and no amount of promotion brings them back — "+
+        "hype only works on people who still believe there is something to be hyped.</div>":"")+
+      "<div class='acts'>"+
+        "<div class='act"+(S.debt>=pc?"":" off")+"' data-t='promote'><div class='an'>Buy Promotion</div>"+
+        "<div class='ad'>Sponsored threads, a stadium, three podcasts and a footballer. Hype +16.</div>"+
+        "<div class='ac'>"+money(pc)+"</div></div>"+
+        "<div class='act"+(S.debt>=sc?"":" off")+"' data-t='seed'><div class='an'>Seed the Reserve</div>"+
+        "<div class='ad'>Real money, visibly on-chain, which is what credibility costs. Trust +9.</div>"+
+        "<div class='ac'>"+money(sc)+"</div></div>"+
+        "<div class='act' data-t='stake'><div class='an'>"+(t.staking?"Suspend Staking":"Open Staking Yield")+"</div>"+
+        "<div class='ad'>Holders arrive 70% faster. The yield comes from the reserve, and then from the next depositor.</div>"+
+        "<div class='ac'>"+(t.staking?"currently open":"currently closed")+"</div></div>"+
+        "<div class='act"+(t.held>0?"":" off")+"' data-t='sell10'><div class='an'>Sell 10%</div>"+
+        "<div class='ad'>A routine treasury operation, announced afterwards. Price and trust both fall.</div>"+
+        "<div class='ac'>≈ "+money(t.held*0.10*t.px*0.94)+"</div></div>"+
+        "<div class='act"+(t.held>0?"":" off")+"' data-t='sell25'><div class='an'>Sell 25%</div>"+
+        "<div class='ad'>Harder on the price, harder on the trust, quicker to the point.</div>"+
+        "<div class='ac'>≈ "+money(t.held*0.25*t.px*0.85)+"</div></div>"+
+        "<div class='act rug"+(t.held>0?"":" off")+"' data-t='rug'><div class='an'>Pull the Liquidity</div>"+
+        "<div class='ad'>Everything at once, plus the reserve. Ends the generation. Unrest +18, attention +30.</div>"+
+        "<div class='ac'>≈ "+money(t.held*t.px*0.35+t.reserve)+"</div></div>"+
+      "</div>"+
+      "<div class='ds' style='margin-top:14px;line-height:1.85'>Everything realised here counts as newly "+
+      "originated — you did not borrow it or lend it, you simply announced it. The venture is held offshore "+
+      "and survives your own collapses.</div>";
+  });
+  const A={launch:launchToken,promote:promote,seed:seedLiquidity,stake:toggleStaking,
+           sell10:()=>tokSell(0.10),sell25:()=>tokSell(0.25),rug:rugPull};
+  $("#pTok").querySelectorAll("[data-t]").forEach(el=>el.onclick=()=>{
+    if(el.classList.contains("off")) return; A[el.dataset.t]();
+  });
+}
+
+function renderWar(){
+  const open=chapterOpen("conflict"), w=war();
+  const key=open+"|"+S.crises+"|"+Math.round(w.inf)+"|"+w.bought+"|"+Object.keys(w.won).join()+
+            "|"+TARGETS.map(t=>Math.round(w.applied[t.id]||0)).join()+"|"+Math.round(S.debt);
+  panel("War",key,()=>{
+    if(!open){
+      const need=CHAPTERS.find(c=>c.id==="conflict").need;
+      return "<div class='empty'>No one is fighting you yet.<br><br>"+
+        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Below a certain size you are a nuisance. Above it you are a counterparty,<br>"+
+        "and counterparties are dealt with rather than prosecuted.</div>";
+    }
+    const cap=infPerQuarter(), cost=infCost(), left=cap-w.bought;
+    let h="<div class='paneHead'><div class='sect'>Conflicts</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>Influence cannot be bought in bulk — only so many people "+
+      "can be placed in a quarter. Every campaign is therefore measured in quarters, and everything you are "+
+      "still besieging pushes back until it falls.</div>"+
+      "<div class='infBar'><div><div class='infBig'>"+fmt(w.inf)+" influence</div>"+
+      "<div class='ds'>+1 standing per quarter · "+w.bought+" / "+cap+" placed this quarter · "+
+      money(cost)+" each</div></div>"+
+      "<button class='dbtn' data-inf='1' "+(left<1||S.debt<cost?"disabled":"")+">PLACE 1</button>"+
+      "<button class='dbtn' data-inf='5' "+(left<1||S.debt<cost?"disabled":"")+">PLACE "+Math.min(5,Math.max(1,left))+"</button></div>";
+    const dbf=warDebuff();
+    if(dbf<1) h+="<div class='warn'>Active sieges are costing you "+((1-dbf)*100).toFixed(0)+
+      "% of income for as long as they remain standing. Concentrate, or withdraw.</div>";
+    for(const tier of [1,2,3]){
+      const ts=TARGETS.filter(t=>t.tier===tier), opened=tierOpen(tier);
+      h+="<div class='tierHead'>"+(tier===1?"I — Inquiries":tier===2?"II — Rival Institutions":"III — Sovereigns")+
+         (opened?"":" · sealed until two of the previous tier have fallen")+"</div>";
+      h+=ts.map(t=>{
+        const won=warWon(t.id), a=w.applied[t.id]||0, pr=Math.min(1,a/t.resolve);
+        const cls=won?"won":!opened?"shut":a>0?"eng":"";
+        const cs=[]; if(t.counter.inc) cs.push("−"+(t.counter.inc*100).toFixed(0)+"% income");
+        if(t.counter.unrest) cs.push("+"+t.counter.unrest+" unrest/quarter");
+        if(t.counter.susp) cs.push("+"+t.counter.susp+" attention/quarter");
+        return "<div class='war "+cls+"'><div class='wt'><div class='wn'>"+t.sig+" &nbsp;"+t.name+"</div>"+
+          "<div class='wr'>"+(won?"<span style='color:var(--green)'>fallen</span>"
+            :fmt(a)+" / "+t.resolve+" influence")+"</div></div>"+
+          "<div class='wd'>"+t.ds+"</div>"+
+          (won?"":"<div class='wc'>While it stands: "+cs.join(" · ")+"</div>")+
+          "<div class='wg'>"+(won?"✓ ":"Reward: ")+t.rw+"</div>"+
+          (won?"":"<div class='wf'><div class='pbar'><i style='width:"+(pr*100)+"%'></i></div>"+
+            "<button class='dbtn' data-c='"+t.id+"|1' "+(!opened||w.inf<1?"disabled":"")+">COMMIT 1</button>"+
+            "<button class='dbtn' data-c='"+t.id+"|999' "+(!opened||w.inf<1?"disabled":"")+">COMMIT ALL</button></div>")+
+          "</div>";
+      }).join("");
+    }
+    return h;
+  });
+  $("#pWar").querySelectorAll("[data-inf]").forEach(el=>el.onclick=()=>buyInfluence(+el.dataset.inf));
+  $("#pWar").querySelectorAll("[data-c]").forEach(el=>el.onclick=()=>{
+    const [id,n]=el.dataset.c.split("|"); commit(id,+n);
+  });
+}
+
+function renderRef(){
+  const seen=chapterOpen("reform")||S.reforms>0;
+  const key=seen+"|"+S.crises+"|"+S.era+"|"+S.seign+"|"+Object.keys(S.charter||{}).map(k=>k+S.charter[k]).join()+
+            "|"+reformYield()+"|"+canReform();
+  panel("Ref",key,()=>{
+    if(!seen){
+      const need=chapterNeed("reform");
+      return "<div class='empty'>The unit of account is not yours yet.<br><br>"+
+        "Opens after <b style='color:var(--gold)'>"+need+" engineered crises</b>. You have "+S.crises+".<br>"+
+        "Collapsing a bank is ordinary work. Collapsing the money everyone else keeps score in<br>"+
+        "requires first becoming the only party still able to keep score.</div>";
+    }
+    const y=reformYield(), ready=canReform(), need=chapterNeed("reform");
+    let h="<div class='paneHead'><div class='sect'>Monetary Reform — era "+S.era+"</div></div>"+
+      "<div class='eraBar'><div><div class='eraBig'>◈ "+fmt(S.seign)+" seigniorage</div>"+
+      "<div class='ds'>"+S.reforms+" reform"+(S.reforms===1?"":"s")+" behind you · "+
+      fmt(S.seignEarned)+" claimed in total · lifetime originated "+money(S.grandTotal+S.allTime)+"</div></div>"+
+      "<div style='text-align:right'><div class='infBig'>"+fmt(y)+"</div>"+
+      "<div class='ds'>on offer for ending this era</div></div></div>"+
+      "<button class='reformbtn' id='doReform' "+(ready?"":"disabled")+">"+
+        (ready?"Reissue the Unit of Account  ▸  +"+fmt(y)+" ◈"
+              :"Requires "+need+" engineered crises — you have "+S.crises)+"</button>"+
+      "<div class='ds' style='margin:-6px 0 14px;line-height:1.8'>A reform erases everything a crisis "+
+      "erases, and then the things a crisis spares: the Pyramid, the token, every conflict won, and your "+
+      "Seized Assets. Every chapter closes. The Charter below is the only thing that crosses over — "+
+      "and it is written in order.</div>"+
+      "<div class='paneHead'><div class='sect'>The Charter</div></div>";
+    h+=CHARTER.map((c,i)=>{
+      const have=hasCh(c.id), prev=i===0||hasCh(CHARTER[i-1].id);
+      const cls=have?"have":!prev?"lock":(S.seign>=c.cost?"":"lock");
+      return "<div class='chart "+cls+"' data-ch='"+c.id+"'><div><div class='cn'>"+c.name+"</div>"+
+        "<div class='cd'>"+c.ds+"</div></div><div class='cc'>"+
+        (have?"✓ granted":fmt(c.cost)+" ◈")+"</div></div>";
+    }).join("");
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>Repeatable</div></div>"+
+       "<div class='chart"+(S.seign>=denomCost()?"":" lock")+"' data-ch='denomX'><div>"+
+       "<div class='cn'>"+DENOM.name+"</div><div class='cd'>"+DENOM.ds+
+       " &nbsp;·&nbsp; currently "+denomLvl()+" in circulation (×"+Math.pow(1.25,denomLvl()).toFixed(2)+")</div></div>"+
+       "<div class='cc'>"+fmt(denomCost())+" ◈</div></div>";
+    return h;
+  });
+  const btn=document.getElementById("doReform");
+  if(btn) btn.onclick=doReform;
+  $("#pRef").querySelectorAll("[data-ch]").forEach(el=>el.onclick=()=>{
+    if(el.dataset.ch==="denomX") return buyDenom();
+    buyCharter(CHARTER.find(c=>c.id===el.dataset.ch));
+  });
+}
+
 function renderLed(){
-  const key=S.q+"|"+S.disp.length+"|"+Object.keys(S.ups).length+"|"+Object.keys(S.nodes).length+"|"+S.crises;
+  const key=S.q+"|"+S.disp.length+"|"+Object.keys(S.ups).length+"|"+Object.keys(S.nodes).length+"|"+S.crises+"|"+Math.round(mkt().realised)+"|"+Math.round(tok().raised)+"|"+Object.keys(war().won).length+"|"+S.era+"|"+S.seign;
   panel("Led",key,()=>
     "<div class='paneHead'><div class='sect'>Position</div></div>"+
+    "<div class='stat'><span>Era</span><b>"+S.era+(S.reforms?" ("+S.reforms+" reforms)":"")+"</b></div>"+
     "<div class='stat'><span>Fiscal period</span><b>"+qName(S.q)+"</b></div>"+
     "<div class='stat'><span>Originated this cycle</span><b>"+money(S.runTotal)+"</b></div>"+
     "<div class='stat'><span>Originated all time</span><b>"+money(S.allTime)+"</b></div>"+
@@ -1063,8 +1947,23 @@ function renderLed(){
     "<div class='stat'><span>Capstone tranches</span><b>×"+capInc().toFixed(2)+"</b></div>"+
     "<div class='stat'><span>Policy rate</span><b>×"+irMult().toFixed(2)+"</b></div>"+
     "<div class='stat'><span>Operation costs</span><b>×"+nodeCostMult().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Signature share of income</span><b>"+(clickShare()*100).toFixed(1)+"%</b></div>"+
+    "<div class='stat'><span>Realised trading gains</span><b>"+money(mkt().realised)+"</b></div>"+
+    "<div class='stat'><span>Token proceeds (all generations)</span><b>"+money(tok().raised)+"</b></div>"+
+    "<div class='stat'><span>Conflicts won</span><b>"+Object.keys(war().won).length+" / "+TARGETS.length+"</b></div>"+
+    "<div class='stat'><span>Conflict income multiplier</span><b>×"+warInc().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Charter multiplier</span><b>×"+chInc().toFixed(2)+"</b></div>"+
+    "<div class='stat'><span>Seigniorage unspent / claimed</span><b>"+fmt(S.seign)+" / "+fmt(S.seignEarned)+"</b></div>"+
     "<div class='stat'><span>Unrest dampening</span><b>×"+calmTotal().toFixed(2)+
       (upCalm()*nodeCalm()*capCalm()<CALM_FLOOR?" (floored)":"")+"</b></div>"+
+    "<div class='paneHead' style='margin-top:16px'><div class='sect'>Chapters</div></div>"+
+    "<div class='chapline open'><span><b>Chapter I</b> — Origination</span><span>open</span></div>"+
+    CHAPTERS.map(c=>{
+      const nd=chapterNeed(c.id), ok=S.crises>=nd;
+      return "<div class='chapline "+(ok?"open":"shut")+"'><span><b>Chapter "+c.n+"</b> — "+c.name+
+        "<br><span style='color:#57506a'>"+c.ds+"</span></span><span style='white-space:nowrap'>"+
+        (ok?"open":S.crises+" / "+nd+" crises")+"</span></div>";
+    }).join("")+
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Dispatches</div></div>"+
     (S.disp.length?S.disp.map(d=>"<div class='disp "+d.c+"'><b>"+d.q+"</b> — "+d.t+"</div>").join("")
       :"<div class='empty'>Nothing has happened yet.</div>")+
@@ -1153,8 +2052,15 @@ function tick(){
   if(dt>60) dt=60;                      // cap absurd jumps
   S.t+=dt;
   gain(income()*dt);
-  S.unrest=Math.max(0,Math.min(100,S.unrest+unrestPerSec()*dt));
-  if(S.unrest>=100&&!revolting()) triggerRevolt();
+  /* Clamp the per-tick swing. A backgrounded tab or a stutter used to hand this
+     loop a multi-second dt, so unrest could leap from 88% straight past 100 while
+     the 160ms repaint still showed 88 — the revolt looked like it fired early. */
+  const du=Math.max(-4,Math.min(4,unrestPerSec()*dt));
+  S.unrest=Math.max(0,Math.min(100,S.unrest+du));
+  if(S.unrest>=100&&!revolting()){
+    if(S.brink<0){ S.brink=S.t+BRINK; dispatch("The meter is at 100%. Final warning.","evt"); }
+    else if(S.t>=S.brink){ S.brink=-1; triggerRevolt(); }
+  } else if(S.unrest<100) S.brink=-1;
   if(S.revoltEnd>0&&S.t>=S.revoltEnd) endRevolt();
   S.qAcc+=dt;
   while(S.qAcc>=QSEC){ S.qAcc-=QSEC; endQuarter(); }
@@ -1176,6 +2082,10 @@ $("#btnLoad").addEventListener("click",importSave);
 $("#btnWipe").addEventListener("click",wipeSave);
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   if(t.dataset.p==="Dos"&&!dosUnlocked()) return;
+  if(t.dataset.p==="Mkt"&&!chapterOpen("market")) return;
+  if(t.dataset.p==="Tok"&&!chapterOpen("token")) return;
+  if(t.dataset.p==="War"&&!chapterOpen("conflict")) return;
+  if(t.dataset.p==="Ref"&&!(chapterOpen("reform")||S.reforms>0)) return;
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); $("#p"+t.dataset.p).classList.add("on");
