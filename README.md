@@ -20,6 +20,19 @@ unmanageable, you schedule the collapse yourself.
 - **A prestige tree** in three branches (Capital, The State, Information), plus a
   repeatable capstone that never runs out
 - **10 dossiers** that unlock after your first engineered crisis
+- **Milestone tiers** — every 10th, 25th, 50th unit of an instrument makes all of them better
+
+### Chapters
+
+New systems open on your count of engineered crises, not on the clock.
+
+| | | opens at |
+|---|---|---|
+| **I** | Origination, doctrines, the policy rate | — |
+| **II** | **The Trading Floor** — five sectors with opposite sensitivities to your own rate. Your decision lands next quarter, so you are the only one who knows. Positioning inside that gap raises Regulatory Attention, and an investigation settles for a fine that is always smaller than the quarter it came from. | 3 crises |
+| **III** | **The Token** — issue your own currency, keep 80% as a founder allocation, buy hype, seed a reserve, open a staking yield paid out of the next depositor. Then decide when to pull the liquidity. | 7 crises |
+| **IV** | **Conflicts** — a siege, not a battle. Influence accrues a few points a quarter and cannot be rushed with money, so campaigns are measured in quarters. Nine targets in three tiers: inquiries, rival institutions, sovereigns. Everything you are still besieging pushes back until it falls. | 11 crises |
+| **V** | **Monetary Reform** — the meta-prestige. You do not collapse the institution this time, you collapse the money. Every contract is redenominated overnight in a currency you issue. It erases everything a crisis erases and then the things a crisis spares — the Pyramid, the token, every conflict won, your Seized Assets — and re-locks every chapter. Only the **Charter** crosses over, because the Charter is the part that says what money is. | 16 crises |
 
 ## Controls
 
@@ -33,6 +46,14 @@ unmanageable, you schedule the collapse yourself.
 
 Progress is stored in your browser's local storage. Clearing your browsing data
 clears the game — use **Export** if you care about a run.
+
+### The Charter
+
+Bought with **seigniorage** — the profit an issuer makes simply by issuing. Nine clauses, written in
+order, spanning roughly six eras: your name on the notes, an inherited ledger, doctrines that were
+never repealed, desks that were never dismantled, a currency board, a second signature, a reform that
+does not inconvenience the reformers, reserve currency status, and finally the clause explaining that
+no further reforms are required.
 
 ## A note on the satire
 
@@ -57,7 +78,7 @@ It is one static HTML file with no dependencies, no build step and no server. Op
 1. Create a repository named `debt-master`
 2. Upload `index.html` (and this README) to the root of the `main` branch
 3. **Settings → Pages → Source: Deploy from a branch → `main` / `root` → Save**
-4. Wait about a minute; the URL is `https://USERNAME.github.io/debt-master/`
+4. Wait about a minute; the URL is `https://hatsukix.github.io/debt-master/`
 
 ## Licence
 
