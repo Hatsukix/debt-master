@@ -1,4 +1,25 @@
 <!DOCTYPE html>
+<!--
+================================================================================
+  DEBT MASTER
+  Copyright (c) 2026 Guillaume Brin. All rights reserved. Tous droits réservés.
+
+  This source is published to be read and played. It is NOT open source.
+  You may play it, read it, learn from it and keep a private copy.
+  You may NOT redistribute it, publish a modified version, or use it
+  commercially, without prior written permission. See LICENSE.
+
+  Ce code est publié pour être lu et joué. Ce n'est PAS de l'open source.
+  Redistribution, version modifiée publiée et usage commercial sont soumis à
+  autorisation écrite préalable. Voir LICENSE.
+
+  Rights of text and data mining — including for the training of machine
+  learning models — are expressly reserved (EU 2019/790 art. 4(3)).
+
+  Official version: https://hatsukix.github.io/debt-master/
+  Contact: gbrin@avenirsanteformation.fr
+================================================================================
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -436,12 +457,20 @@
   </div>
   <button id="begin">Take the Desk</button>
   <div class="introFoot">Satire. Every conspiracy here is either absurd or a matter of public record.<br>
-    Progress saves automatically in this browser.</div>
+    Progress saves automatically in this browser.<br><br>
+    © 2026 Guillaume Brin · All rights reserved · <span style="color:#6f6685">hatsukix.github.io/debt-master</span></div>
 </div></div>
 <div id="modal"><div class="card" id="card"></div></div>
 
 <script>
 "use strict";
+/* Debt Master — Copyright (c) 2026 Guillaume Brin. All rights reserved.
+   Source-available, not open source. Redistribution, modified versions and any
+   commercial use require prior written permission. See LICENSE.            */
+console.log("%cDebt Master","font:600 20px serif;color:#d4af37",
+  "\n© 2026 Guillaume Brin — all rights reserved."+
+  "\nSource-available, not open source. See LICENSE before reusing anything."+
+  "\nOfficial version: https://hatsukix.github.io/debt-master/");
 /* ==========================================================================
    DEBT MASTER — prototype v0.2
    Single file, no external deps, no browser storage (manual ledger export).
@@ -1967,7 +1996,11 @@ function renderLed(){
     "<div class='paneHead' style='margin-top:16px'><div class='sect'>Dispatches</div></div>"+
     (S.disp.length?S.disp.map(d=>"<div class='disp "+d.c+"'><b>"+d.q+"</b> — "+d.t+"</div>").join("")
       :"<div class='empty'>Nothing has happened yet.</div>")+
-    "<div class='ds' style='margin-top:16px;line-height:1.9'>Progress saves automatically in this browser "+
+    "<div class='ds' style='margin-top:18px;padding-top:12px;border-top:1px solid rgba(212,175,55,.15);line-height:1.9'>"+
+    "<b style='color:var(--gold)'>Debt Master</b> — © 2026 Guillaume Brin. All rights reserved.<br>"+
+    "Source-available, not open source: reading and playing are free, redistribution and "+
+    "commercial use are not. The official version lives at hatsukix.github.io/debt-master.</div>"+
+    "<div class='ds' style='margin-top:12px;line-height:1.9'>Progress saves automatically in this browser "+
     "every ten seconds. Use <b style='color:var(--gold)'>Export</b> to carry the ledger to another machine — "+
     "the Eye keeps no backups of its own, on principle.</div>"
   );

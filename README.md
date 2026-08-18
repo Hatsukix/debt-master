@@ -80,6 +80,22 @@ It is one static HTML file with no dependencies, no build step and no server. Op
 3. **Settings → Pages → Source: Deploy from a branch → `main` / `root` → Save**
 4. Wait about a minute; the URL is `https://hatsukix.github.io/debt-master/`
 
-## Licence
+## Licence — read this before reusing anything
 
-MIT — do what you like with it.
+**Debt Master is source-available, not open source.** © 2026 Guillaume Brin, all rights reserved.
+
+The code is published here so it can be read and played. That is the whole intent.
+
+**Free, no need to ask:** play it, read and study the source, keep a private copy, link to it,
+write about it, review it, stream it.
+
+**Requires prior written permission:** redistributing it or hosting it at another address,
+publishing a modified version, a translation or a port, any commercial use whatsoever
+(including hosting it alongside advertising), and using the name *Debt Master* for a game.
+
+Permission is often granted for non-commercial and educational projects — just ask.
+
+Rights of text and data mining, including for training machine learning models, are expressly
+reserved under Article 4(3) of Directive (EU) 2019/790.
+
+Full terms, in English and French, are in [LICENSE](LICENSE). Contact: gbrin@avenirsanteformation.fr
