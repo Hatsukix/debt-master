@@ -70,8 +70,10 @@
     color:var(--blood-hot);border-left:1px solid var(--edge);border-right:1px solid var(--edge);padding:5px 0;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 94%,transparent);
             mask-image:linear-gradient(90deg,transparent,#000 4%,#000 94%,transparent)}
-  .ticker span{display:inline-block;padding-left:100%;animation:slide 150s linear infinite}
-  @keyframes slide{to{transform:translateX(-100%)}}
+  .ticker span{display:inline-block;opacity:0;transition:opacity .5s ease;max-width:100%;
+    overflow:hidden;text-overflow:ellipsis}
+  .ticker span.on{opacity:1}
+  .ticker span.own{color:var(--gold-dim)}
   .hbtn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:transparent;
     color:var(--muted);border:1px solid var(--edge);padding:5px 9px;cursor:pointer;border-radius:2px}
   .hbtn:hover{color:var(--gold);border-color:var(--gold-dim)}
@@ -141,6 +143,20 @@
   .sect{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-dim);
     border-bottom:1px solid var(--edge);padding-bottom:5px;flex:1;min-width:140px}
   .mults{display:flex;gap:4px}
+  .tokRail{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 14px}
+  .tokChip{border:1px solid var(--edge);border-radius:3px;padding:6px 10px;cursor:pointer;
+    background:rgba(255,255,255,.012);min-width:84px}
+  .tokChip b{display:block;font-family:var(--mono);font-size:11px;color:var(--gold-dim);letter-spacing:.08em}
+  .tokChip s{display:block;text-decoration:none;font-family:var(--mono);font-size:12px;color:var(--ink)}
+  .tokChip i{font-style:normal;font-family:var(--mono);font-size:9.5px}
+  .tokChip i.up{color:var(--green)} .tokChip i.dn{color:var(--red)} .tokChip i.flat{color:var(--muted)}
+  .tokChip.on{border-color:var(--gold-dim);background:rgba(212,175,55,.09)}
+  .tokChip.dead{opacity:.45}
+  .tokChip.new{border-style:dashed;opacity:.6} .tokChip.new.can{opacity:1;border-color:var(--gold-dim)}
+  .payRow{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
+  .payRow input[type=range]{flex:1;min-width:0;accent-color:var(--gold)}
+  .payLbl{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .payLbl b{color:var(--gold-hot);font-size:13px}
   .mult{font-family:var(--mono);font-size:10px;padding:4px 9px;border:1px solid var(--edge);color:var(--muted);
     cursor:pointer;border-radius:2px;background:transparent}
   .mult.on{color:var(--gold-hot);border-color:var(--gold-dim);background:rgba(212,175,55,.1)}
@@ -459,6 +475,7 @@
         <div class="tab" data-p="Dos"><span class="tl"></span> <span class="dot" id="dDos" style="display:none"></span></div>
         <div class="tab" data-p="Pyr"><span class="tl"></span> <span class="dot" id="dPyr" style="display:none"></span></div>
         <div class="tab" data-p="Mkt"><span class="tl"></span> <span class="dot" id="dMkt" style="display:none"></span></div>
+        <div class="tab" data-p="End"><span class="tl"></span> <span class="dot" id="dEnd" style="display:none"></span></div>
         <div class="tab" data-p="Tok"><span class="tl"></span> <span class="dot" id="dTok" style="display:none"></span></div>
         <div class="tab" data-p="War"><span class="tl"></span> <span class="dot" id="dWar" style="display:none"></span></div>
         <div class="tab" data-p="Ref"><span class="tl"></span> <span class="dot" id="dRef" style="display:none"></span></div>
@@ -469,6 +486,7 @@
       <div class="pane" id="pDos"></div>
       <div class="pane" id="pPyr"></div>
       <div class="pane" id="pMkt"></div>
+      <div class="pane" id="pEnd"></div>
       <div class="pane" id="pTok"></div>
       <div class="pane" id="pWar"></div>
       <div class="pane" id="pRef"></div>
@@ -503,7 +521,7 @@ console.log("%cDebt Master","font:600 20px serif;color:#d4af37",
        mechanisms of financial/political capture, using unnamed archetypes.
    ========================================================================== */
 
-const VERSION = "v1.7";
+const VERSION = "v1.8";
 
 /* ==========================================================================
    LANGUAGES
@@ -524,6 +542,20 @@ const LANGS=[
  {id:"ko",label:"한국어"}
 ];
 const TR={};                       // TR.fr = {ui:{...}, gens:{...}, ...}
+/* Adds translations by dotted id, creating whatever is missing on the way down.
+   Arrays keep being arrays — headlines are indexed, not named. */
+function TRADD(lang,map){
+  const t=TR[lang]||(TR[lang]={});
+  for(const k of Object.keys(map)){
+    const parts=k.split("."); let o=t;
+    for(let i=0;i<parts.length-1;i++){
+      const p=parts[i];
+      if(o[p]===null||typeof o[p]!=="object") o[p]=(/^\d+$/.test(parts[i+1])?[]:{});
+      o=o[p];
+    }
+    o[parts[parts.length-1]]=map[k];
+  }
+}
 let LANG="en";
 /* Resolves a dotted id against the active language, falling back to the English
    passed at the call site. Never returns undefined. */
@@ -570,6 +602,8 @@ const TRANSLATABLE=[
  {key:"sectors",arr:()=>SECTORS,     fields:["name","ds"]},
  {key:"havens", arr:()=>HAVENS,      fields:["name","ds"]},
  {key:"targets",arr:()=>TARGETS,     fields:["name","ds","rw"]},
+ {key:"endups", arr:()=>END_UPS,     fields:["name","nd"]},
+ {key:"endorse",arr:()=>ENDORSERS,   fields:["name","ds"]},
  {key:"charter",arr:()=>CHARTER,     fields:["name","ds"]},
  {key:"chain",  arr:()=>CHAIN,       fields:["name"]}
 ];
@@ -647,7 +681,7 @@ const UI_EN={
   footSave:"Progress saves automatically in this browser.",
   footRights:"All rights reserved",
   tabOps:"Operations", tabDoc:"Doctrines", tabDos:"Dossiers", tabPyr:"The Pyramid",
-  tabMkt:"Market", tabTok:"Token", tabWar:"Conflicts", tabRef:"Reform", tabLed:"Ledger",
+  tabMkt:"Market", tabEnd:"Endowment", tabTok:"Token", tabWar:"Conflicts", tabRef:"Reform", tabLed:"Ledger",
   sign:"Sign a Loan", perSig:"per signature",
   debtLabel:"Debt Under Management", perSec:"/sec", perQuarter:"/quarter",
   policyRate:"Policy Rate", yield_:"Yield", unrestWord:"unrest",
@@ -910,6 +944,61 @@ const UI_EN={
   epiContinue:"Continue",
   epiAgain:"Begin Again",
   epiNote:"Remaining keeps your empire exactly as it is. Beginning again wipes this browser's save and returns you to the first day.",
+  endNone:"There is no foundation yet.",
+  endNone2:"Owning the world pays a dividend. A dividend spent is a dividend gone; a dividend endowed is a dividend that endows.",
+  endTitle:"The Endowment",
+  endEndowed:"endowed",
+  endTaken:"distributed to date",
+  endMultiple:"growth on contributions",
+  endPerQuarter:"compounding per quarter",
+  endNextQuarter:"next quarter",
+  endNote:"The capital is never spent — only what it earns. Whatever you leave in is what compounds next quarter, which is the entire argument, and the entire trap. The foundation survives your engineered crises; a trust is not a bank. It does not survive a monetary reform, because nothing does.",
+  endEndow:"Endow",
+  endDepositDs:"Move it beyond your own reach, which is where it works hardest.",
+  endPayoutTitle:"Distribution Policy",
+  endPayoutNote:"The share of each quarter's growth that reaches you. Everything you do not take stays inside and earns again. At nothing distributed the foundation simply gets larger, which the deed describes as its purpose.",
+  endDistributed:"of growth distributed",
+  endKept:"Retained and compounding",
+  endPaidOut:"Distributed to you",
+  endAutoTitle:"Standing Instruction on Dividends",
+  endAutoTaxed:"The share of your dividends paid straight into the foundation. It is withheld on the way in, for now.",
+  endAutoExempt:"The share of your dividends paid straight into the foundation. Nothing is withheld: the foundation is resident elsewhere.",
+  endUpsTitle:"Instruments of the Deed",
+  endUpsNote:"Bought out of the foundation's own capital, which is what a foundation's capital is for. Each one is permanent.",
+  endDissolveTitle:"Winding Up",
+  endDissolve:"Break the Trust",
+  endDissolveDs:"Liquidate the capital and take it back into the book. Forty per cent goes to the people who drafted the instrument saying it could not be done.",
+  mDissolveTitle:"Break the Trust?",
+  mDissolve1:"The deed says the capital is inalienable. The deed was drafted by a firm that also drafts the exception, and bills for both.",
+  mDissolveOut:"Returned to the book:",
+  mDissolve2:"The compounding stops here. Forty per cent of the capital is retained in fees. The foundation continues to exist, because dissolving it entirely would raise questions.",
+  btnDissolveTrust:"Break It",
+  dEndUp:"Deed amended — {n}.",
+  dDissolve:"The trust has been broken. {m} returned to the book, the balance retained in fees.",
+  gCompound:"let the foundation earn 80% more than was put into it",
+  endBest:"best reached",
+  endBestNote:"The chapter gate reads the best ratio the fund has ever reached, so endowing more money never takes it away from you.",
+  lmEndBal:"Endowment capital",
+  lmEndRate:"Compounding rate",
+  lmEndMult:"Growth on contributions",
+  tokSlots:"live",
+  tokBuySlot:"Open a Desk",
+  tokDead:"gone to zero",
+  tokFromPeak:"from peak",
+  tokOverOne:"{n} is over. {m} realised across its life. The holders have formed a group chat, then a class action, then a smaller group chat.",
+  tokPosition:"Your Position",
+  tokPositionNote:"Supply is cheap when nobody wants it and dear when everybody does, and you are the only party who knows what is scheduled next. Buy the wreckage, arrange the recovery, leave before it is over.",
+  tokBuy10:"Buy 10% of the float",
+  tokBuy35:"Buy 35% of the float",
+  tokBuyDs:"Taking supply off the market lifts the price, which is a side effect you have budgeted for.",
+  tokEndorseTitle:"Paid Mentions",
+  tokEndorseNote:"None of them will disclose the arrangement, because none of them has been told there is one. The cap jumps at once and comes back down over the following quarters; being on the other side of that is the entire skill.",
+  tokEndorseCool:"The last mention is still being discussed. Nobody credible is available for {n} more quarters.",
+  tokProgTitle:"The Programme",
+  dTokSlot:"A {n}th issuance desk has been opened.",
+  dEndorse:"{w} has mentioned {n}. The cap moved +{p}% before the sentence finished.",
+  mRug3b:"The desk stays open. The next issue will cost more to launch, and will also be believed.",
+  lmTokLive:"Live issues / desks",
   docEmpty:"No doctrine has been revealed to you yet.<br>Originate more debt — the Eye is watching your volume.",
   docReaffTitle:"Reaffirmation — repeatable",
   docReaffNote:"Every doctrine is enacted. They can, however, be enacted again — louder, and with a commemorative dinner.",
@@ -1263,7 +1352,51 @@ const HEADLINES=[
  "Public urged to remain calm. Calm is now a subscription, billed quarterly.",
  "Historic settlement: bank admits nothing, keeps everything, and receives a written apology.",
  "Hearing scheduled, then rescheduled, then held during a match nobody could miss.",
- "Ombudsman appointed to investigate the ombudsman. Both report to us."
+ "Ombudsman appointed to investigate the ombudsman. Both report to us.",
+ "Quarterly results beat expectations, which were revised on Tuesday by the people reporting them.",
+ "Deregulation package named after the crisis that it makes possible.",
+ "Firm fined 0.4% of the quarter it earned doing it. Shares rise on the certainty.",
+ "Reptilian delegation seated in the gallery. Minutes record 'no unusual attendance'.",
+ "Chemtrail budget line reclassified as weather-adjacent brand awareness.",
+ "Committee chair discovers the sector two days before the sector discovers the committee.",
+ "Fluoride rebate oversubscribed. Applicants report feeling agreeable about it.",
+ "Retail investors urged to think long term by a desk that closed its position on Thursday.",
+ "The auditor's fee is described as immaterial. The auditor described it first.",
+ "Denver sub-basement expansion approved. Blueprints reclassified as interior design.",
+ "Central banker says 'transitory' and the room relaxes for eleven months.",
+ "Emergency facility opened at midnight on Sunday, closed Monday, permanently reopened Tuesday.",
+ "Birds observed perching on cameras. Cameras observed perching on birds.",
+ "Lobbying disclosure filed. Return on the spend estimated at 22,000%, footnoted as approximate.",
+ "Nation pledges reform in exchange for a facility. Facility pledges nothing in exchange for the reform.",
+ "Pension fund adopts an alternative allocation. The alternative is us.",
+ "Stress test passed by all participants, including the two that later did not exist.",
+ "Terms updated. Continued breathing constitutes acceptance.",
+ "Grove retreat concludes early. Attendees describe the weather at unusual length.",
+ "Consultant hired to find the savings. Savings found. Consultant's fee equals the savings.",
+ "Regulator moves to the private sector, then back, then to a body that supervises both.",
+ "Insurance product covers the event, excluding the circumstances in which the event occurs.",
+ "Bank apologises. Apology issued by a department created to issue it.",
+ "Man who declined the terms is now the subject of a study on non-participants.",
+ "Rate raised to fight inflation. Inflation raised to fight the rate.",
+ "Exchange halts withdrawals, citing overwhelming demand for withdrawals.",
+ "The moon has been rehypothecated. Astronomers ask to whom.",
+ "Breach affects everyone. Company offers everyone twelve months of watching it happen.",
+ "Ratings model updated. Same securities, better letters, identical paper.",
+ "Sovereign fund invests in a road it will also be charging you to use.",
+ "Deferred prosecution agreed. The deferral has itself been deferred.",
+ "Study finds housing unaffordable. Study funded by the party that finds this convenient.",
+ "Anonymous holder moves the market with one sentence and a photograph of a dog.",
+ "Token declared legal tender in a nation of 300,000. Volume unaffected. Coverage enormous.",
+ "Listing announced on a major exchange. The exchange is us, wearing a different domain.",
+ "Foundation formed to give the money away reports a strong investment year.",
+ "The committee sets the benchmark. The committee's members price contracts against the benchmark.",
+ "Flat-earth society opens a branch office in every direction.",
+ "Debt ceiling raised at 3am after being called non-negotiable at 9pm.",
+ "Homeowner reads clause 14 aloud. Clause 14 declines to be read aloud.",
+ "Bailout described as a loan, loan described as a gift, gift described as leadership.",
+ "Analyst downgrades us. Analyst's employer discovers it needs our business.",
+ "Central bank prints a record quantity and asks the public not to make it weird.",
+ "Ombudsman's report published in full, on a Friday, in a font."
 ];
 
 /* ==========================================================================
@@ -1291,7 +1424,11 @@ const SHARES=1e6;            // outstanding shares per sector
 /* Prices are index points, not §. One point is worth mkt().scale, and that
    scale ratchets up with your income — otherwise cornering the world costs 167%
    of a quarter early on and 0.0% of one later, which is what it did. */
-const SCALE_K=6e-8;          // whole world ≈ 30 quarters of income at index 100
+const SCALE_K=6e-8;          // whole world ≈ 30 quarters of income at the hour the floor opens
+const MKT_DRIFT=0.012;       // the index melts up ~1.2%/quarter on its own
+const DIV_SCALE=0.6;         // dividends are the Endowment's feedstock: real, not a second income
+const BOARD_BONUS=0.9;       // a cornered sector distributes on your instruction
+const END_BASE=0.025;        // the Endowment compounds 2.5%/quarter before any clause
 const BASE_TAX=0.30;         // flat rate on dividends before any arrangement
 
 /* Tax arrangements. Each is a real, documented, entirely lawful structure. */
@@ -1351,12 +1488,15 @@ const CHAIN=[
  {id:"mkt",tab:"Mkt",name:"The Trading Floor",from:"The Pyramid",
   have:()=>Object.keys(S.nodes).length, need:()=>gscale(5),
   txt:()=>U("gBuild")+" "+gscale(5)+" "+U("gNodes")},
- {id:"tok",tab:"Tok",name:"The Token",from:"The Trading Floor",
-  have:()=>worldPct()*100, need:()=>gscale(25), pct:true,
-  txt:()=>U("gOwn")+" "+gscale(25)+"% "+U("gWorld")},
+ {id:"end",tab:"End",name:"The Endowment",from:"The Trading Floor",
+  have:()=>worldPct()*100, need:()=>gscale(12), pct:true,
+  txt:()=>U("gOwn")+" "+gscale(12)+"% "+U("gWorld")},
+ {id:"tok",tab:"Tok",name:"The Token",from:"The Endowment",
+  have:()=>endBest()*100, need:()=>gscale(180), pct:true,
+  txt:()=>U("gCompound")},
  {id:"war",tab:"War",name:"Conflicts",from:"The Token",
-  have:()=>tok().gen, need:()=>gscale(2),
-  txt:()=>U("gLaunch")+" "+gscale(2)+" "+U("gGenerations")},
+  have:()=>tokp().launched, need:()=>gscale(3),
+  txt:()=>U("gLaunch")+" "+gscale(3)+" "+U("gGenerations")},
  {id:"ref",tab:"Ref",name:"Monetary Reform",from:"Conflicts",
   have:()=>Object.keys(war().won).length, need:()=>gscale(4),
   txt:()=>U("gWin")+" "+gscale(4)+" "+U("gConflicts")}
@@ -1375,6 +1515,7 @@ function refreshUnlocks(){
     const prevOpen=!c.from || stageOpen(CHAIN[CHAIN.indexOf(c)-1].id);
     if(prevOpen && stageReady(c.id)){
       S.unlocked[c.id]=true;
+      if(c.id==="mkt") freezeScale();
       if(c.id!=="ops") opened.push(c);
     }
   }
@@ -1431,15 +1572,30 @@ function freshMarket(){
   return m;
 }
 const mkt=()=>{ if(!S.mkt) S.mkt=freshMarket(); if(!S.mkt.havens) S.mkt.havens={}; return S.mkt; };
-/* Ratchets on every read, never falls. It used to be initialised lazily on first
-   access — which happened during the boot repaint, when income() is still 0, so
-   it stuck at the 1e-6 floor and the whole world cost §500. */
+/* THE ERA SCALE — fixed once, when the floor opens, and again at every reform.
+   It used to track income on every read. That looked like scale invariance and
+   was really a treadmill: ten percent of a sector always cost the same number of
+   quarters, so no amount of growth ever bought you more of the world. Freezing it
+   is the whole point of the market — your income compounds, the market only
+   drifts, and the world slowly becomes purchasable.
+   Never freeze a zero: at boot income() is 0, and a scale of 1e-6 once made the
+   entire world cost §500. Until there is something to index against, the value is
+   provisional and is not written down. */
 function mktScale(){
-  const m=mkt(), want=income()*QSEC*SCALE_K;
-  if(!(m.scale>0)||want>m.scale) m.scale=want>0?want:1e-6;
-  return m.scale;
+  const m=mkt();
+  if(m.scale>0) return m.scale;
+  const inc=income();
+  if(inc<=0) return 1e-6;          // provisional, and deliberately not written down
+  /* Freeze on the first read that has something real to index against. Leaving it
+     provisional was worse than it looks: a purchase and the sale that followed
+     could be priced off two different scales if income moved in between. */
+  return (m.scale=inc*QSEC*SCALE_K);
 }
-function ratchetScale(){ mktScale(); }
+/* Called the quarter the Trading Floor opens, so the era is priced on the income
+   you had when the desk was handed to you, not on whatever it is when you first
+   happen to look at a share price. */
+function freezeScale(){ mktScale(); }
+function ratchetScale(){ }
 const shareVal=id=>mkt().px[id]*mktScale();
 const heldShares  = id=>mkt().pos[id]||0;
 const freeFloat   = id=>Math.max(0,SHARES-heldShares(id));
@@ -1449,15 +1605,29 @@ function worldPct(){
   return held/(SHARES*SECTORS.length);
 }
 function portfolioValue(){
-  let v=0; for(const x of SECTORS) v+=heldShares(x.id)*shareVal(x.id);
+  let v=0;
+  for(const x of SECTORS){ const n=heldShares(x.id); if(n>0) v+=n*shareVal(x.id); }
   return v;
 }
-/* Scarcity premium: the last shares cost far more than the first. */
+/* Cornering premium. The first shares are quoted; the last ones have to be prised
+   out of people who have worked out what you are doing. ×1 at nothing owned, ×1.9
+   at half, ×7.9 at nine tenths, ×25 at the very end — so the last slice of the
+   world is a campaign, not a purchase. */
+function cornerMult(own){ return Math.pow(1/(1-Math.min(0.97,own)),0.9); }
+/* Integrated over the shares actually bought. Charging the premium that applies at
+   the *starting* position let one press of ALL take the whole float at the quoted
+   price — the cornering cost has to accrue as you corner, not before. */
+function cornerIntegral(o){
+  const k=Math.min(Math.max(0,o),0.97);
+  let v=10*(1-Math.pow(1-k,0.1));
+  if(o>0.97) v+=cornerMult(0.97)*(Math.min(1,o)-0.97);
+  return v;
+}
 function buyCost(id,pctOfFloat){
-  const n=freeFloat(id)*pctOfFloat;
+  const own=ownPct(id), n=freeFloat(id)*pctOfFloat;
   if(n<=0) return Infinity;
-  const scarcity=1+Math.pow(ownPct(id),2)*4;
-  return n*shareVal(id)*scarcity;
+  const o2=Math.min(1,own+n/SHARES);
+  return SHARES*shareVal(id)*(cornerIntegral(o2)-cornerIntegral(own));
 }
 function insiderRisk(){ return S.ratePending!==null && S.ratePending!==S.rate; }
 
@@ -1468,33 +1638,47 @@ function moveMarket(rateDelta){
     const policy = x.beta*rateDelta*0.016;
     const anger  = x.unr*(S.unrest/100-0.35)*0.07;
     const noise  = (Math.random()-0.5)*0.09;
-    const drift  = 0.006;
+    const drift  = MKT_DRIFT;                  // the index melts up on its own
     const tight  = ownPct(x.id)*0.03;          // your own buying supports the price
     m.px[x.id]=Math.max(4, m.px[x.id]*(1+policy+anger+noise+drift+tight));
     const h=m.hist[x.id]; h.push(m.px[x.id]); if(h.length>26) h.shift();
   }
   payDividends();
+  endTick();
   if(m.susp>=100) investigation();
   else m.susp=Math.max(0,m.susp-SUSP_DECAY*warSuspDecay());
 }
-/* A sector pays on how it has actually done, not on what it promised. */
+/* A sector pays on how it has actually done, not on what it promised — and on who
+   sits on its board. Control is worth more than the shares: a sector you have
+   cornered distributes on your instruction, and the instruction is always the
+   same one. */
 function sectorHealth(id){
   const h=mkt().hist[id];
-  if(!h||h.length<2) return 1;
-  return Math.max(0.25,Math.min(2.2,h[h.length-1]/h[0]));
+  const run=(!h||h.length<2)?1:h[h.length-1]/h[0];
+  return Math.max(0.25,Math.min(2.2,run*(1+ownPct(id)*BOARD_BONUS)));
 }
 function quarterDividend(id){
   const x=SECTORS.find(y=>y.id===id);
-  return heldShares(id)*shareVal(id)*x.div*sectorHealth(id);
+  return heldShares(id)*shareVal(id)*x.div*DIV_SCALE*sectorHealth(id);
 }
 function payDividends(){
   const m=mkt();
   let gross=0;
   for(const x of SECTORS) gross+=quarterDividend(x.id);
   if(gross<=0) return;
-  const t=taxRate(), tax=gross*t, net=gross-tax;
+  /* The share routed straight into the Endowment never passes through you, which
+     is the whole argument for routing it: a domiciled foundation is not withheld
+     from. What reaches your hand is taxed as usual. */
+  const e=endw(), a=Math.max(0,Math.min(1,e.auto||0));
+  const toFund=gross*a, toHand=gross-toFund;
+  const t=taxRate();
+  const fundTax=endExempt()?0:toFund*t, handTax=toHand*t;
+  const tax=fundTax+handTax, net=gross-tax;
   m.divs+=net; m.tax+=tax;
-  S.debt+=net; S.runTotal+=net; S.allTime+=net;
+  const endowed=(toFund-fundTax)*endMatch();
+  if(endowed>0){ e.bal+=endowed; e.deposited+=toFund-fundTax; }
+  const cash=toHand-handTax;
+  S.debt+=cash; S.runTotal+=net; S.allTime+=net;
   if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
   if(S.q%4===0) dispatch(U("dDivs").replace("{g}",money(gross)).replace("{t}",money(tax))
     .replace("{p}",(t*100).toFixed(0)).replace("{n}",money(net)),"");
@@ -1535,6 +1719,106 @@ function sellStock(id,pct){
 }
 
 /* ==========================================================================
+   CHAPTER III — THE ENDOWMENT
+   Everything else in this game is linear in your attention: you buy a thing, it
+   pays. The Endowment is the one system that pays for waiting. Capital compounds
+   quarter after quarter, and the only decision is how much of the growth you take
+   out — because whatever you leave in is what compounds next.
+   It is a foundation whose charitable purpose, on inspection, is to continue to
+   exist. It survives your engineered crises, because a trust is not the bank.
+   It does not survive a monetary reform, because nothing does.
+   ========================================================================== */
+const END_UPS=[
+ {id:"purpose", cost:0.05, rate:0.006, sig:"§",
+  name:"The Perpetual Purpose Clause",
+  nd:"The deed names a purpose so broad that no expenditure could ever advance it. Compounding +0.6 pts per quarter."},
+ {id:"advisors",cost:0.15, rate:0.008, sig:"⚖",
+  name:"An Advisory Board of Former Supervisors",
+  nd:"They know precisely which questions the current supervisors are trained to ask. Compounding +0.8 pts per quarter."},
+ {id:"domicile",cost:0.40, exempt:true, sig:"◈",
+  name:"A Domicile of Convenience",
+  nd:"The foundation is resident in a jurisdiction with a flag, a registry and no follow-up questions. Dividends paid into the Endowment are no longer withheld."},
+ {id:"mandate", cost:1.00, rate:0.010, sig:"◉",
+  name:"The Reinvestment Mandate",
+  nd:"Distributions require a vote of a board that has never been convened. Compounding +1.0 pts per quarter."},
+ {id:"matched", cost:2.50, match:0.25, sig:"▲",
+  name:"Matched Giving",
+  nd:"Every endowment is matched a quarter over from an affiliated foundation, which is this one. Deposits are credited at 125%."},
+ {id:"immortal",cost:6.00, rate:0.014, sig:"☾",
+  name:"The Instrument Cannot Be Revoked",
+  nd:"Not by you, not by your heirs, not by the state that chartered it. Compounding +1.4 pts per quarter."}
+];
+function freshEndow(){ return {bal:0, deposited:0, taken:0, payout:0, auto:0, ups:{}, dissolved:0, best:0}; }
+function endw(){ if(!S.end) S.end=freshEndow(); if(!S.end.ups) S.end.ups={}; return S.end; }
+const endHas=id=>!!endw().ups[id];
+/* Growth ÷ contributions. Deposits raise both, so this number only moves when the
+   capital actually earns — which is the entire lesson the chain gate is built on.
+   The gate reads the BEST ratio ever reached, not today's: a fresh deposit dilutes
+   the ratio for a while, and a player who keeps endowing must not be punished for
+   it by watching the next chapter walk backwards. */
+function endMultiple(){ const e=endw(); return e.deposited>0 ? (e.bal+e.taken)/e.deposited : 0; }
+function endBest(){
+  const e=endw(), m=endMultiple();
+  if(m>(e.best||0)) e.best=m;
+  return e.best||0;
+}
+function endRate(){
+  let r=END_BASE;
+  for(const u of END_UPS) if(endHas(u.id)&&u.rate) r+=u.rate;
+  r+=worldPct()*0.02;                     // the world's own return, since you own it
+  r+=Object.keys(S.nodes||{}).length*0.0009;
+  r+=chSum("inc")*0.0;                    // reserved
+  if(hasCh("reserve")) r+=0.010;
+  return Math.min(0.14,r);
+}
+const endMatch =()=>endHas("matched")?1.25:1;
+const endExempt=()=>endHas("domicile");
+function endDeposit(frac){
+  const e=endw(), amt=S.debt*frac;
+  if(!(amt>0)) return;
+  S.debt-=amt;
+  e.bal+=amt*endMatch(); e.deposited+=amt;
+  dirty();
+}
+/* Called once a quarter, after dividends. Growth is split between what you take
+   and what keeps working; the capital itself is never spent. */
+function endTick(){
+  const e=endw();
+  if(!(e.bal>0)) return;
+  const growth=e.bal*endRate();
+  const paid=growth*Math.max(0,Math.min(1,e.payout));
+  e.bal+=growth-paid;
+  if(paid>0){ e.taken+=paid; S.debt+=paid; S.runTotal+=paid; S.allTime+=paid;
+    if(S.runTotal>S.bestRun) S.bestRun=S.runTotal; }
+  /* Recorded as it happens, not when somebody happens to open the tab — a high
+     water mark that only exists while it is being looked at is not a record. */
+  endBest();
+}
+function buyEndUp(u){
+  const e=endw();
+  if(!u||endHas(u.id)) return;
+  const c=endUpCost(u);
+  if(e.bal<c) return;
+  e.bal-=c; e.ups[u.id]=true;
+  dispatch(U("dEndUp").replace("{n}",u.name),"win");
+  dirty();
+}
+/* Priced as a multiple of the world's quoted value, which is frozen with the era —
+   so the administration costs what it costs, and compounding is what pays for it. */
+const worldQuoted=()=>SHARES*SECTORS.length*100*mktScale();
+const endUpCost=u=>u.cost*worldQuoted();
+function dissolveTrust(){
+  const e=endw();
+  if(!(e.bal>0)) return;
+  const out=e.bal*0.6;
+  e.bal=0; e.dissolved++; e.taken+=out;
+  S.debt+=out; S.runTotal+=out; S.allTime+=out;
+  if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
+  dispatch(U("dDissolve").replace("{m}",money(out)),"evt");
+  dirty();
+}
+
+/* ==========================================================================
    CHAPTER III — THE TOKEN
    You are not trading someone else's asset now, you are issuing your own.
    Supply is a number you choose, hype is a number you buy, and trust is the
@@ -1548,110 +1832,216 @@ const TOKEN_NAMES=[
  {n:"AEON",    t:"AEO", pitch:"A store of value for the long term, launched last Tuesday."},
  {n:"PARAGON", t:"PGN", pitch:"Governance is decentralised across the community. We hold the community."},
  {n:"NEXUM",   t:"NXM", pitch:"Backed one-to-one by instruments we also issue. The circle is the innovation."},
- {n:"TRUSTLESS",t:"TRL",pitch:"No trust required, which is fortunate, given the circumstances."}
+ {n:"TRUSTLESS",t:"TRL",pitch:"No trust required, which is fortunate, given the circumstances."},
+ {n:"ASCENDANT",t:"ASC",pitch:"Deflationary by design: we burn a portion of every transaction, and a portion of every question."},
+ {n:"MERIDIAN",t:"MRD", pitch:"Cross-border, instant, final. Two of the three have been independently observed."},
+ {n:"LUMEN",   t:"LMN", pitch:"Carbon-negative consensus, audited by a firm we introduced to the auditor."},
+ {n:"PONTIFEX",t:"PTX", pitch:"A bridge between traditional finance and the future, tolled at both ends."},
+ {n:"SANCTUM", t:"SNC", pitch:"Self-custody, so that nobody can freeze your assets, including you."},
+ {n:"HALCYON", t:"HLC", pitch:"A yield-bearing reserve asset. The yield bears the reserve, in practice."},
+ {n:"VESSEL",  t:"VSL", pitch:"Real-world assets, tokenised. The real world was not asked to countersign."}
+];
+/* The people who move a market by mentioning it. Archetypes, never anyone real:
+   the joke is the mechanism, and the mechanism does not need a name attached. */
+const ENDORSERS=[
+ {id:"magnate", sig:"⚙", mult:2.35, cost:0.30, name:"An Industrialist With a Posting Habit",
+  ds:"He builds rockets, he builds cars, and at two in the morning he builds sentences. One of them will be about you."},
+ {id:"anchor",  sig:"◉", mult:1.85, cost:0.16, name:"A Late-Evening Broadcast Host",
+  ds:"He does not understand it, says so warmly, and recommends it anyway. His audience finds the honesty persuasive."},
+ {id:"athlete", sig:"✦", mult:1.70, cost:0.12, name:"An Athlete Between Contracts",
+  ds:"A photograph, a ticker symbol and a caption in three words. The compliance disclosure is in the ninth line."},
+ {id:"fund",    sig:"▲", mult:2.05, cost:0.22, name:"A Fund That Discloses Its Position Afterwards",
+  ds:"They took the position, then published the thesis, in that order, which they describe as conviction."},
+ {id:"minister",sig:"⚖", mult:2.60, cost:0.42, name:"A Minister of a Small Republic",
+  ds:"He declares it legal tender in a televised address filmed on a beach. The IMF issues a statement; the price does not care."}
 ];
 const TOK_SUPPLY=1e6;
-const TOK_SAT=22;           // adoption ceiling, in multiples of the launch cap
-const TOK_GROWTH=0.55;      /* Swept over saturation x growth: the cap peaks around x49 at q40, but
-                               promotion costs scale with the cap, so the best exit is q28 for ~22
-                               quarters of income. You sell while it still looks healthy. */
-function freshToken(){ return {live:false,gen:0,idx:0,mcap:0,launchMcap:0,px:0,held:0,
-  hype:0,trust:0,holders:0,reserve:0,staking:false,raised:0,soldQ:0,hist:[],dead:false}; }
-const tok=()=>{ if(!S.tok) S.tok=freshToken(); return S.tok; };
-const tokPx=()=>{ const t=tok(); return t.mcap/TOK_SUPPLY; };
-const tokPublicPct=()=>1-tok().held/TOK_SUPPLY;
-const tokValue=()=>{ const t=tok(); return t.live? (t.held/TOK_SUPPLY)*t.mcap : 0; };
-function tokLaunchCost(){ return Math.max(1e4, income()*QSEC*0.8*Math.pow(2.1,tok().gen)); }
-function tokPromoCost(){ return Math.max(1e3, tok().mcap*0.020); }
-function tokSeedCost(){  return Math.max(1e3, tok().mcap*0.040); }
+const TOK_SAT=22;            // adoption ceiling, in multiples of the launch cap
+const TOK_GROWTH=0.55;
+const TOK_VOL=0.30;          /* quarterly volatility of the cap — this market is the
+                                one place in the game where the number moves on its
+                                own, violently, and timing is the whole skill. */
+const TOK_SLOTS_MAX=6;
+const END_COOL=3;            // quarters before the same figure can be paid again
+
+function freshTok(idx){
+  return {idx:idx, live:true, dead:false, mcap:0, launchMcap:0, px:0, held:0,
+          hype:25, trust:55, holders:140, reserve:0, staking:false, raised:0, spent:0,
+          soldQ:0, hist:[], endCool:0, endUsed:0, peak:0};
+}
+function freshTokP(){ return {slots:3, launched:0, raised:0, list:[], sel:0}; }
+function tokp(){
+  if(!S.tokp) S.tokp=freshTokP();
+  if(!Array.isArray(S.tokp.list)) S.tokp.list=[];
+  return S.tokp;
+}
+const tokList  =()=>tokp().list;
+const tokLive  =()=>tokList().filter(t=>t.live);
+const tokSel   =()=>{ const p=tokp(); return p.list[Math.min(p.sel||0,Math.max(0,p.list.length-1))]||null; };
+const tokFreeSlots=()=>tokp().slots-tokLive().length;
+const tokName  =t=>TOKEN_NAMES[t.idx%TOKEN_NAMES.length];
+const tokPxOf  =t=>t.mcap/TOK_SUPPLY;
+const tokPublicPct=t=>1-t.held/TOK_SUPPLY;
+const tokValueOf=t=>t.live?(t.held/TOK_SUPPLY)*t.mcap:0;
+function tokPortfolio(){ let v=0; for(const t of tokList()) v+=tokValueOf(t); return v; }
+
+/* Launch price is geometric in how many you have issued, and frozen against the
+   era scale rather than your income — an issuer who has done it eleven times is
+   not charged eleven times more because he got richer in between. */
+function tokLaunchCost(){
+  const p=tokp();
+  return Math.max(1e4, worldQuoted()*0.06*Math.pow(1.9,p.launched));
+}
+function tokSlotCost(){ return worldQuoted()*0.5*Math.pow(3,tokp().slots-3); }
+function tokPromoCost(t){ return Math.max(1e3, t.mcap*0.020); }
+function tokSeedCost(t){  return Math.max(1e3, t.mcap*0.040); }
+function endorseCost(t,e){ return Math.max(1e3, t.mcap*e.cost*(1+t.endUsed*0.6)); }
 
 function launchToken(){
-  const t=tok(), cost=tokLaunchCost();
-  if(t.live||S.debt<cost) return;
+  const p=tokp(), cost=tokLaunchCost();
+  if(tokFreeSlots()<1||S.debt<cost) return;
   S.debt-=cost;
-  t.live=true; t.dead=false; t.gen++;
-  t.idx=(t.gen-1)%TOKEN_NAMES.length;
-  t.launchMcap=Math.max(1, income()*QSEC*10);
-  t.mcap=t.launchMcap; t.px=tokPx();
+  const t=freshTok(p.launched%TOKEN_NAMES.length);
+  t.launchMcap=Math.max(1, worldQuoted()*0.35);
+  t.mcap=t.launchMcap; t.px=tokPxOf(t);
   t.held=TOK_SUPPLY*0.80;              // the pre-mine, disclosed on page 40
-  t.hype=25; t.trust=55; t.holders=140; t.reserve=0; t.staking=false;
-  t.soldQ=0; t.hist=[t.px];
-  dispatch(U("dTokLaunch").replace("{g}",t.gen).replace("{n}",TOKEN_NAMES[t.idx].n),"win");
+  t.hist=[t.px]; t.peak=t.px; t.spent=cost;
+  p.list.push(t); p.launched++; p.sel=p.list.length-1;
+  dispatch(U("dTokLaunch").replace("{g}",p.launched).replace("{n}",tokName(t).n),"win");
   dirty();
 }
-function promote(){
-  const t=tok(), c=tokPromoCost();
-  if(!t.live||S.debt<c) return;
-  S.debt-=c; t.hype=Math.min(100,t.hype+18); dirty();
+function buySlot(){
+  const p=tokp(), c=tokSlotCost();
+  if(p.slots>=TOK_SLOTS_MAX||S.debt<c) return;
+  S.debt-=c; p.slots++;
+  dispatch(U("dTokSlot").replace("{n}",p.slots),"win");
+  dirty();
 }
-function seedLiquidity(){
-  const t=tok(), c=tokSeedCost();
-  if(!t.live||S.debt<c) return;
-  S.debt-=c; t.reserve+=c; t.trust=Math.min(100,t.trust+9); dirty();
+function promote(t){
+  const c=tokPromoCost(t);
+  if(!t||!t.live||S.debt<c) return;
+  S.debt-=c; t.spent+=c; t.hype=Math.min(100,t.hype+18); dirty();
 }
-function toggleStaking(){
-  const t=tok(); if(!t.live) return;
+function seedLiquidity(t){
+  const c=tokSeedCost(t);
+  if(!t||!t.live||S.debt<c) return;
+  S.debt-=c; t.spent+=c; t.reserve+=c; t.trust=Math.min(100,t.trust+9); dirty();
+}
+function toggleStaking(t){
+  if(!t||!t.live) return;
   t.staking=!t.staking;
   dispatch(t.staking?U("dStakeOn"):U("dStakeOff"),"");
   dirty();
 }
-/* Selling is the whole tension: it is the only way to realise anything, and it
-   is the thing that destroys the price and the trust you spent §  building. */
-function tokSell(pct){
-  const t=tok(); if(!t.live) return;
+/* Pay a figure to mention it. The cap jumps at once, the hype spikes, and then it
+   comes back down — the entire skill is being on the other side of the trade when
+   it does. Paying the same figure twice costs more and moves less. */
+function endorse(t,e){
+  if(!t||!t.live||t.endCool>0) return;
+  const c=endorseCost(t,e);
+  if(S.debt<c) return;
+  const fade=Math.pow(0.78,t.endUsed);
+  const mult=1+(e.mult-1)*fade;
+  S.debt-=c; t.spent+=c;
+  t.mcap*=mult; t.px=tokPxOf(t);
+  t.hype=Math.min(100,t.hype+45*fade);
+  t.holders+=t.holders*0.9*fade+400*fade;
+  t.trust=Math.max(0,t.trust-4);
+  t.endCool=END_COOL; t.endUsed++;
+  mkt().susp=Math.min(120,mkt().susp+6);
+  dispatch(U("dEndorse").replace("{w}",e.name).replace("{n}",tokName(t).n)
+    .replace("{p}",((mult-1)*100).toFixed(0)),"win");
+  dirty();
+}
+/* Buying your own token back off the market. This is how a crash becomes an
+   opportunity: supply is cheap when nobody wants it, and you are the only party
+   who knows what is scheduled next. */
+function tokBuy(t,pctOfPublic){
+  if(!t||!t.live) return;
+  const pub=TOK_SUPPLY-t.held, units=pub*pctOfPublic;
+  if(units<=0) return;
+  const slip=1+Math.min(0.45,pctOfPublic*0.5);
+  const cost=(units/TOK_SUPPLY)*t.mcap*slip;
+  if(!isFinite(cost)||S.debt<cost) return;
+  S.debt-=cost; t.spent+=cost;
+  t.held+=units;
+  t.mcap*=1+Math.min(0.6,pctOfPublic*0.55);   // taking supply off the market lifts it
+  t.px=tokPxOf(t);
+  t.trust=Math.min(100,t.trust+2);            // visible buying reads as commitment
+  dirty();
+}
+function tokBuyCost(t,pctOfPublic){
+  const pub=TOK_SUPPLY-t.held, units=pub*pctOfPublic;
+  if(units<=0) return Infinity;
+  return (units/TOK_SUPPLY)*t.mcap*(1+Math.min(0.45,pctOfPublic*0.5));
+}
+/* Selling is the whole tension: the only way to realise anything, and the thing
+   that destroys the price and the trust you spent § building. */
+function tokSell(t,pct){
+  if(!t||!t.live) return;
   const units=t.held*pct; if(units<=0) return;
   const slip=1-Math.min(0.55,pct*0.6);
   const proceeds=(units/TOK_SUPPLY)*t.mcap*slip;
   t.held-=units;
-  // dumping a share f of total supply takes the cap down with it, hard
   const f=units/TOK_SUPPLY;
   t.mcap=Math.max(t.launchMcap*0.005, t.mcap*(1-Math.min(0.80,f*1.4)));
-  t.px=tokPx();
+  t.px=tokPxOf(t);
   t.trust=Math.max(0,t.trust-pct*75);
-  t.soldQ+=pct; t.raised+=proceeds;
+  t.soldQ+=pct; t.raised+=proceeds; tokp().raised+=proceeds;
   S.debt+=proceeds; S.runTotal+=proceeds; S.allTime+=proceeds;
   if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
   dirty();
 }
-function rugValue(){ const t=tok(); return (t.held/TOK_SUPPLY)*t.mcap*0.35 + t.reserve; }
-function rugPull(){
-  const t=tok(); if(!t.live) return;
-  const proceeds=rugValue();
+function rugValue(t){ return t?(t.held/TOK_SUPPLY)*t.mcap*0.35+t.reserve:0; }
+function rugPull(t){
+  if(!t||!t.live) return;
+  const proceeds=rugValue(t);
   showModal(U("mRugTitle"),
     "<p>"+U("mRug1")+"</p>"+
     "<p style='color:#ffe58a'>"+U("mRugRealised")+" "+money(proceeds)+"</p>"+
-    "<p style='color:#d92d43'>"+U("mRug2").replace("{n}",TOKEN_NAMES[t.idx].n)+"</p>"+
-    "<p style='color:#8a8199'>"+U("mRug3").replace("{g}",(t.gen+1))+"</p>",
+    "<p style='color:#d92d43'>"+U("mRug2").replace("{n}",tokName(t).n)+"</p>"+
+    "<p style='color:#8a8199'>"+U("mRug3b")+"</p>",
     [{t:U("btnNotYet"),f:closeModal},{t:U("btnPullIt"),f:()=>{
       S.debt+=proceeds; S.runTotal+=proceeds; S.allTime+=proceeds;
       if(S.runTotal>S.bestRun) S.bestRun=S.runTotal;
-      t.raised+=proceeds;
-      t.live=false; t.dead=true; t.held=0; t.mcap=t.launchMcap*0.005; t.px=tokPx();
+      t.raised+=proceeds; tokp().raised+=proceeds;
+      t.live=false; t.dead=true; t.held=0; t.mcap=t.launchMcap*0.005; t.px=tokPxOf(t);
       t.trust=0; t.hype=0; t.holders=0; t.reserve=0; t.staking=false;
       S.unrest=Math.min(100,S.unrest+18);
       mkt().susp=Math.min(120,mkt().susp+30);
-      dispatch(U("dRug").replace("{n}",TOKEN_NAMES[t.idx].n).replace("{m}",money(proceeds)),"evt");
+      dispatch(U("dRug").replace("{n}",tokName(t).n).replace("{m}",money(proceeds)),"evt");
       closeModal(); dirty();
     }}]);
 }
 function moveToken(){
-  const t=tok(); if(!t.live) return;
+  for(const t of tokList()) moveOne(t);
+}
+function moveOne(t){
+  if(!t.live) return;
   const trustF=t.trust/100;
-  // adoption compounds only while the thing is both hyped and believed
   const inflow=t.holders*(t.hype/100)*0.30*trustF*(t.staking?1.7:1)+t.hype*0.8;
   t.holders=Math.max(0,t.holders+inflow-t.holders*0.09);
-  /* Saturation: every hype cycle eventually runs out of people who have not
-     heard of it yet. Without this, holding forever is strictly optimal and the
-     token has no peak to time. */
   const sat=1/(1+t.mcap/(t.launchMcap*TOK_SAT));
-  const growth=TOK_GROWTH*(t.hype/100)*trustF*sat + 0.03*(trustF-0.4) - t.soldQ*1.2 - 0.05;
-  t.mcap=Math.max(t.launchMcap*0.005, t.mcap*Math.max(0.35,Math.min(1.9,1+growth)));
-  t.px=tokPx();
+  /* A holder base is a floor under the price: people who are already in are not
+     selling, whatever the quarter looks like. Without this term the staking
+     programme cost a fortune in reserve and did nothing whatsoever to the cap,
+     which made it a pure trap rather than a decision. */
+  const base=0.055*Math.tanh(t.holders/9000);
+  const fundamental=TOK_GROWTH*(t.hype/100)*trustF*sat + base + 0.03*(trustF-0.4) - t.soldQ*1.2 - 0.05;
+  /* The shock is the point of this chapter. It is symmetric in expectation and
+     fat in the tails: most quarters drift, one in twelve does something absurd
+     in either direction. Nothing here can be predicted, only positioned for. */
+  let shock=(Math.random()*2-1)*TOK_VOL;
+  if(Math.random()<0.08) shock*=2.6;
+  const post=t.endCool>0?-0.06:0;             // the comedown after a mention
+  t.mcap=Math.max(t.launchMcap*0.002, t.mcap*Math.max(0.28,Math.min(2.4,1+fundamental+shock+post)));
+  t.px=tokPxOf(t);
+  if(t.px>t.peak) t.peak=t.px;
   if(t.soldQ===0) t.trust=Math.min(100,t.trust+2.5);
   t.hype*=0.82;
+  if(t.endCool>0) t.endCool--;
   if(t.staking){
-    // the yield is owed on everything the public holds, so it grows as you cash out
-    const owed=tokPublicPct()*t.mcap*0.05;
+    const owed=tokPublicPct(t)*t.mcap*0.05;
     t.reserve-=owed;
     if(t.reserve<=0){
       t.reserve=0; t.trust=Math.max(0,t.trust-22);
@@ -1660,7 +2050,7 @@ function moveToken(){
   }
   if(t.trust<=3 && t.holders<25 && t.mcap<=t.launchMcap*0.03){
     t.live=false; t.dead=true;
-    dispatch(U("dTokZero").replace("{n}",TOKEN_NAMES[t.idx].n),"evt");
+    dispatch(U("dTokZero").replace("{n}",tokName(t).n),"evt");
   }
   t.soldQ=0;
   t.hist.push(t.px); if(t.hist.length>26) t.hist.shift();
@@ -1836,7 +2226,7 @@ function reformYield(){
      the content of one era should not buy half the Charter outright. */
   const base=Math.floor(Math.pow(Math.max(0,S.allTime)/1e12,SEIGN_EXP)*SEIGN_COEF);
   const built=Math.floor((Object.keys(war().won).length + Object.keys(S.nodes).length +
-    Object.keys(S.dosDone).length + tok().gen + S.crises/2)/6);
+    Object.keys(S.dosDone).length + tokp().launched + S.crises/2)/6);
   return Math.max(0,Math.floor((base+built)*chSeign()));
 }
 const canReform=()=>chapterOpen("reform") && reformYield()>0;
@@ -1907,7 +2297,7 @@ function freshGame(){
     crises:0, revolts:0, allTime:0, bestRun:0,
     hiStreak:0, calmStreak:0,
     f_revolt:0, f_bail:0,
-    tok:freshToken(), war:freshWar(), mkt:freshMarket(),
+    tokp:freshTokP(), war:freshWar(), mkt:freshMarket(), end:freshEndow(),
     dosDone:{}, dosActive:[], dosClaim:{}, coldDone:0, reaff:0,
     disp:[], seenDos:false,
     era:1, reforms:0, seign:0, seignEarned:0, charter:{}, grandTotal:0, unlocked:{ops:true},
@@ -2256,7 +2646,7 @@ function paint(){
   $("#signSub").textContent="+"+money(perClick())+" "+U("perSig");
   $("#qLbl").textContent=qName(S.q);
   const TABL={Ops:"tabOps",Doc:"tabDoc",Dos:"tabDos",Pyr:"tabPyr",Mkt:"tabMkt",
-              Tok:"tabTok",War:"tabWar",Ref:"tabRef",Led:"tabLed"};
+              End:"tabEnd",Tok:"tabTok",War:"tabWar",Ref:"tabRef",Led:"tabLed"};
   document.querySelectorAll(".tab").forEach(t=>{
     const l=t.querySelector(".tl"); if(l) l.textContent=U(TABL[t.dataset.p]||"");
   });
@@ -2344,7 +2734,7 @@ function paint(){
     const i=CHARTER.indexOf(c); return !hasCh(c.id)&&S.seign>=c.cost&&(i===0||hasCh(CHARTER[i-1].id));})))
     ?"inline-block":"none";
   $("#dWar").style.display=(stageOpen("war")&&war().inf>0)?"inline-block":"none";
-  $("#dTok").style.display=(stageOpen("tok")&&(!tok().live||tok().hype<12))?"inline-block":"none";
+  $("#dTok").style.display=(stageOpen("tok")&&(tokFreeSlots()>0||tokLive().some(t=>t.hype<12)))?"inline-block":"none";
   $("#dMkt").style.display=(stageOpen("mkt")&&mkt().susp>=60)?"inline-block":"none";
   $("#dOps").style.display=GENS.some((g,i)=>genVisible(i)&&S.debt>=bulkCost(i,1))?"inline-block":"none";
   $("#dDoc").style.display=UPS.some(x=>upAvailable(x)&&S.debt>=x.cost)?"inline-block":"none";
@@ -2352,7 +2742,7 @@ function paint(){
     (S.dosActive.length<dosSlots()&&dosOfferable().some(d=>!S.dosActive.includes(d.id)))))?"inline-block":"none";
   $("#dPyr").style.display=ALLNODES.some(n=>nodeState(n)==="can")?"inline-block":"none";
 
-  renderOps(); renderDoc(); renderDos(); renderPyr(); renderMkt(); renderTok(); renderWar(); renderRef(); renderLed();
+  renderOps(); renderDoc(); renderDos(); renderPyr(); renderMkt(); renderEnd(); renderTok(); renderWar(); renderRef(); renderLed();
   force=false;
 }
 
@@ -2626,12 +3016,106 @@ function tokSpark(h){
 function bar(v,col){ return "<div class='meter'><i style='width:"+Math.max(0,Math.min(100,v))+
   "%;background:"+col+"'></i></div>"; }
 
+function renderEnd(){
+  const open=stageOpen("end"), e=endw();
+  const key=open+"|"+Math.round(e.bal)+"|"+e.payout+"|"+e.auto+"|"+Object.keys(e.ups).join()+"|"+Math.round(endBest()*100)+
+            "|"+Math.round(S.debt)+"|"+Math.round(endRate()*10000);
+  panel("End",key,()=>{
+    if(!open){
+      return "<div class='empty'>"+U("endNone")+"<br><br>"+
+        U("opensAny")+"<br>"+
+        "&nbsp;· "+stageProgress(stage("end"))+"<br><br>"+
+        U("endNone2")+"</div>";
+    }
+    const r=endRate(), growth=e.bal*r, paid=growth*e.payout, kept=growth-paid;
+    const mult=endMultiple(), best=endBest();
+    let h="<div class='paneHead'><div class='sect'>"+U("endTitle")+"</div></div>"+
+      "<div class='eraBar'><div><div class='eraBig'>"+money(e.bal)+"</div>"+
+      "<div class='ds'>"+U("endEndowed")+" "+money(e.deposited)+" · "+U("endTaken")+" "+money(e.taken)+
+      " · "+U("endMultiple")+" ×"+mult.toFixed(2)+
+      (best>mult+0.005?" · "+U("endBest")+" ×"+best.toFixed(2):"")+"</div>"+
+      "<div class='meter' style='margin-top:7px'><i style='width:"+
+        Math.min(100,best/1.8*100)+"%;background:linear-gradient(90deg,#3d6a86,#ffe58a)'></i></div></div>"+
+      "<div style='text-align:right'><div class='infBig'>"+(r*100).toFixed(2)+"%</div>"+
+      "<div class='ds'>"+U("endPerQuarter")+"<br>+"+money(growth)+" "+U("endNextQuarter")+"</div></div></div>"+
+      "<div class='ds' style='margin:-4px 0 12px;line-height:1.85'>"+U("endNote")+" "+U("endBestNote")+"</div>";
+
+    h+="<div class='paneHead'><div class='sect'>"+U("endEndow")+"</div></div>"+
+      "<div class='acts'>"+
+      [[0.10,"10%"],[0.50,"50%"],[1,U("mktBuyAll")]].map(d=>
+        "<div class='act"+(S.debt>0?"":" off")+"' data-ed='"+d[0]+"'>"+
+        "<div class='an'>"+d[1]+"</div><div class='ad'>"+U("endDepositDs")+"</div>"+
+        "<div class='ac'>"+money(S.debt*d[0])+(endMatch()>1?" ▸ "+money(S.debt*d[0]*endMatch()):"")+
+        "</div></div>").join("")+
+      "</div>";
+
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("endPayoutTitle")+"</div></div>"+
+      "<div class='ds' style='margin:-4px 0 8px'>"+U("endPayoutNote")+"</div>"+
+      "<div class='payRow'><input type='range' id='endPay' min='0' max='100' step='5' value='"+
+        Math.round(e.payout*100)+"'>"+
+      "<div class='payLbl'><b>"+Math.round(e.payout*100)+"%</b> "+U("endDistributed")+"</div></div>"+
+      "<div class='stat'><span>"+U("endKept")+"</span><b style='color:var(--green)'>+"+money(kept)+"</b></div>"+
+      "<div class='stat'><span>"+U("endPaidOut")+"</span><b style='color:#ffe58a'>+"+money(paid)+"</b></div>";
+
+    if(stageOpen("mkt")){
+      h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("endAutoTitle")+"</div></div>"+
+        "<div class='ds' style='margin:-4px 0 8px'>"+
+        (endExempt()?U("endAutoExempt"):U("endAutoTaxed"))+"</div>"+
+        "<div class='mults'>"+[0,0.5,1].map(v=>
+          "<button class='mult"+(Math.abs((e.auto||0)-v)<0.01?" on":"")+"' data-ea='"+v+"'>"+
+          Math.round(v*100)+"%</button>").join("")+"</div>";
+    }
+
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("endUpsTitle")+"</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>"+U("endUpsNote")+"</div>"+
+      END_UPS.map(u=>{
+        const c=endUpCost(u), have=endHas(u.id), can=e.bal>=c;
+        return "<div class='chart "+(have?"have":can?"":"lock")+"' data-eu='"+u.id+"'>"+
+          "<div><div class='cn'>"+u.sig+" &nbsp;"+u.name+"</div><div class='cd'>"+u.nd+"</div></div>"+
+          "<div class='cc'>"+(have?U("refGranted"):money(c))+"</div></div>";
+      }).join("");
+
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("endDissolveTitle")+"</div></div>"+
+      "<div class='act rug"+(e.bal>0?"":" off")+"' data-ed2='1' style='max-width:100%'>"+
+      "<div class='an'>"+U("endDissolve")+"</div><div class='ad'>"+U("endDissolveDs")+"</div>"+
+      "<div class='ac'>≈ "+money(e.bal*0.6)+"</div></div>";
+    return h;
+  });
+  $("#pEnd").querySelectorAll("[data-ed]").forEach(el=>el.onclick=()=>{
+    if(el.classList.contains("off")) return; endDeposit(+el.dataset.ed);
+  });
+  $("#pEnd").querySelectorAll("[data-ea]").forEach(el=>el.onclick=()=>{
+    endw().auto=+el.dataset.ea; dirty();
+  });
+  $("#pEnd").querySelectorAll("[data-eu]").forEach(el=>el.onclick=()=>
+    buyEndUp(END_UPS.find(u=>u.id===el.dataset.eu)));
+  const dz=$("#pEnd").querySelector("[data-ed2]");
+  if(dz) dz.onclick=()=>{
+    if(dz.classList.contains("off")) return;
+    showModal(U("mDissolveTitle"),
+      "<p>"+U("mDissolve1")+"</p>"+
+      "<p style='color:#ffe58a'>"+U("mDissolveOut")+" "+money(endw().bal*0.6)+"</p>"+
+      "<p style='color:#d92d43'>"+U("mDissolve2")+"</p>",
+      [{t:U("btnNotYet"),f:closeModal},{t:U("btnDissolveTrust"),f:()=>{dissolveTrust();closeModal();}}]);
+  };
+  /* The slider is rebound rather than rebuilt on every input, so dragging it does
+     not destroy the element under the pointer — the same defect that once ate
+     seventeen clicks out of twenty on the market buttons. */
+  const sl=document.getElementById("endPay");
+  if(sl) sl.oninput=()=>{
+    endw().payout=(+sl.value)/100;
+    const lb=$("#pEnd").querySelector(".payLbl b");
+    if(lb) lb.textContent=sl.value+"%";
+  };
+  if(sl) sl.onchange=()=>dirty();
+}
+
 function renderTok(){
-  const open=chapterOpen("token"), t=tok();
-  const key=open+"|"+S.crises+"|"+t.live+"|"+t.gen+"|"+t.mcap.toExponential(3)+"|"+Math.round(t.hype)+"|"+
-            Math.round(t.trust)+"|"+Math.round(t.holders)+"|"+Math.round(t.held)+"|"+t.staking+"|"+
-            Math.round(t.reserve)+"|"+(S.debt>=tokLaunchCost()?1:0)+(S.debt>=tokPromoCost()?1:0)+
-            (S.debt>=tokSeedCost()?1:0);
+  const open=chapterOpen("token"), p=tokp();
+  const key=open+"|"+p.slots+"|"+p.launched+"|"+p.sel+"|"+
+    p.list.map(t=>(t.live?1:0)+t.mcap.toExponential(3)+Math.round(t.hype)+Math.round(t.trust)+
+      Math.round(t.held)+t.staking+Math.round(t.reserve)+t.endCool).join()+
+    "|"+(S.debt>=tokLaunchCost()?1:0)+(S.debt>=tokSlotCost()?1:0);
   panel("Tok",key,()=>{
     if(!open){
       return "<div class='empty'>"+U("tokNone")+"<br><br>"+
@@ -2639,28 +3123,52 @@ function renderTok(){
         "&nbsp;· "+stageProgress(stage("tok"))+"<br><br>"+
         U("tokNone2")+"</div>";
     }
-    if(!t.live){
+    let h="<div class='paneHead'><div class='sect'>"+U("tokDesk")+"</div>"+
+      "<div class='mults'><span class='ds'>"+tokLive().length+" / "+p.slots+" "+U("tokSlots")+"</span>"+
+      (p.slots<TOK_SLOTS_MAX?"<button class='mult"+(S.debt>=tokSlotCost()?" on":"")+"' id='tokSlot'>"+
+        U("tokBuySlot")+" · "+money(tokSlotCost())+"</button>":"")+"</div></div>";
+
+    /* The portfolio rail: every issue you have ever made, live or buried. */
+    h+="<div class='tokRail'>"+p.list.map((t,i)=>{
+      const nm=tokName(t), sel=i===p.sel;
+      const prev=t.hist.length>1?t.hist[t.hist.length-2]:0;
+      /* Clamped: a chip is four characters wide, and a token that came back from
+         near zero can post a genuinely six-digit percentage. */
+      const ch=prev>0?Math.max(-99,Math.min(999,(t.px/prev-1)*100)):0;
+      return "<div class='tokChip"+(sel?" on":"")+(t.dead?" dead":"")+"' data-ts='"+i+"'>"+
+        "<b>"+nm.t+"</b><s>"+(t.dead?U("tokDead"):"§"+(t.px<1?t.px.toPrecision(2):fmt(t.px)))+"</s>"+
+        (t.dead?"":"<i class='"+(ch>0.5?"up":ch<-0.5?"dn":"flat")+"'>"+(ch>=0?"+":"")+ch.toFixed(0)+"%</i>")+
+        "</div>";
+    }).join("")+
+      (tokFreeSlots()>0?"<div class='tokChip new"+(S.debt>=tokLaunchCost()?" can":"")+"' id='tokNew'>"+
+        "<b>+</b><s>"+U("tokLaunch")+"</s><i class='flat'>"+money(tokLaunchCost())+"</i></div>":"")+
+      "</div>";
+
+    const t=tokSel();
+    if(!t){
       const cost=tokLaunchCost(), can=S.debt>=cost;
-      const nx=TOKEN_NAMES[t.gen%TOKEN_NAMES.length];
-      return "<div class='paneHead'><div class='sect'>"+U("tokDesk")+
-        (t.gen?" — "+U("tokGeneration")+" "+(t.gen+1):"")+"</div></div>"+
-        (t.dead?"<div class='warn'>"+TOKEN_NAMES[t.idx].n+" "+U("tokOver")+" "+
-          money(t.raised)+". "+U("tokOver2")+"</div>":"")+
-        "<div class='dos'><div class='code'>"+U("tokProspectus")+" — "+nx.t+"</div><div class='ti'>"+nx.n+"</div>"+
-        "<div class='bd'>"+nx.pitch+"<br><br>"+U("tokSupply")+"<br><br>"+
-        U("tokHypeNote")+"</div>"+
+      const nx=TOKEN_NAMES[p.launched%TOKEN_NAMES.length];
+      return h+"<div class='dos'><div class='code'>"+U("tokProspectus")+" — "+nx.t+"</div>"+
+        "<div class='ti'>"+nx.n+"</div>"+
+        "<div class='bd'>"+nx.pitch+"<br><br>"+U("tokSupply")+"<br><br>"+U("tokHypeNote")+"</div>"+
         "<div class='goal'>▸ "+U("tokLaunchCost")+" "+money(cost)+" — "+U("tokYouHave")+" "+money(S.debt)+"</div></div>"+
         "<div class='acts'><div class='act"+(can?"":" off")+"' data-t='launch'>"+
         "<div class='an'>"+U("tokLaunch")+" "+nx.n+"</div><div class='ad'>"+U("tokLaunchDs")+"</div>"+
         "<div class='ac'>"+money(cost)+"</div></div></div>";
     }
-    const nm=TOKEN_NAMES[t.idx], mcap=t.mcap, yours=tokValue();
-    const pc=tokPromoCost(), sc=tokSeedCost();
-    return "<div class='tokHead'><div><div class='tokName'>"+nm.n+
-        "<small>$"+nm.t+" · "+U("tokGeneration")+" "+t.gen+" · "+nm.pitch+"</small></div></div>"+
+    const nm=tokName(t), yours=tokValueOf(t);
+    h+="<div class='tokHead'><div><div class='tokName'>"+nm.n+
+        "<small>$"+nm.t+" · "+nm.pitch+"</small></div></div>"+
       "<div><div class='tokPx'>§"+(t.px<1?t.px.toPrecision(3):fmt(t.px))+"</div>"+
-      "<div class='ds' style='text-align:right'>"+U("tokMcap")+" "+money(mcap)+"</div>"+tokSpark(t.hist)+"</div></div>"+
-      "<div class='gauges'>"+
+      "<div class='ds' style='text-align:right'>"+U("tokMcap")+" "+money(t.mcap)+
+      " · "+U("tokFromPeak")+" "+((t.px/(t.peak||1)-1)*100).toFixed(0)+"%</div>"+tokSpark(t.hist)+"</div></div>";
+
+    if(t.dead){
+      h+="<div class='warn'>"+U("tokOverOne").replace("{n}",nm.n).replace("{m}",money(t.raised))+"</div>";
+      return h;
+    }
+    const pc=tokPromoCost(t), sc=tokSeedCost(t);
+    h+="<div class='gauges'>"+
         "<div class='gauge'><b>"+U("tokHype")+"</b><s>"+t.hype.toFixed(0)+" / 100</s>"+
           bar(t.hype,"linear-gradient(90deg,#8c7423,#ffe58a)")+"</div>"+
         "<div class='gauge'><b>"+U("tokTrust")+"</b><s>"+t.trust.toFixed(0)+" / 100</s>"+
@@ -2673,33 +3181,70 @@ function renderTok(){
           "<div class='ds'>"+(t.staking?U("tokDraining"):U("tokIdle"))+"</div></div>"+
       "</div>"+
       (t.staking&&t.reserve<=0?"<div class='warn'>"+U("tokEmptyRes")+"</div>":"")+
-      (t.trust<20?"<div class='warn'>"+U("tokNoTrust")+"</div>":"")+
+      (t.trust<20?"<div class='warn'>"+U("tokNoTrust")+"</div>":"");
+
+    /* Accumulate, then have somebody mention it, then leave. */
+    h+="<div class='paneHead' style='margin-top:14px'><div class='sect'>"+U("tokPosition")+"</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>"+U("tokPositionNote")+"</div>"+
       "<div class='acts'>"+
-        "<div class='act"+(S.debt>=pc?"":" off")+"' data-t='promote'><div class='an'>"+U("tokPromote")+"</div>"+
-        "<div class='ad'>"+U("tokPromoteDs")+"</div>"+
-        "<div class='ac'>"+money(pc)+"</div></div>"+
-        "<div class='act"+(S.debt>=sc?"":" off")+"' data-t='seed'><div class='an'>"+U("tokSeed")+"</div>"+
-        "<div class='ad'>"+U("tokSeedDs")+"</div>"+
-        "<div class='ac'>"+money(sc)+"</div></div>"+
-        "<div class='act' data-t='stake'><div class='an'>"+(t.staking?U("tokSuspend"):U("tokOpenStaking"))+"</div>"+
-        "<div class='ad'>"+U("tokStakeDs")+"</div>"+
-        "<div class='ac'>"+(t.staking?U("tokCurrentlyOpen"):U("tokCurrentlyClosed"))+"</div></div>"+
+        [[0.10,U("tokBuy10")],[0.35,U("tokBuy35")]].map(d=>{
+          const c=tokBuyCost(t,d[0]), can=S.debt>=c&&tokPublicPct(t)>0.02;
+          return "<div class='act"+(can?"":" off")+"' data-t='buy"+(d[0]*100)+"'>"+
+            "<div class='an'>"+d[1]+"</div><div class='ad'>"+U("tokBuyDs")+"</div>"+
+            "<div class='ac'>"+money(c)+"</div></div>";
+        }).join("")+
         "<div class='act"+(t.held>0?"":" off")+"' data-t='sell10'><div class='an'>"+U("tokSell10")+"</div>"+
         "<div class='ad'>"+U("tokSell10Ds")+"</div>"+
         "<div class='ac'>≈ "+money(t.held*0.10*t.px*0.94)+"</div></div>"+
         "<div class='act"+(t.held>0?"":" off")+"' data-t='sell25'><div class='an'>"+U("tokSell25")+"</div>"+
         "<div class='ad'>"+U("tokSell25Ds")+"</div>"+
         "<div class='ac'>≈ "+money(t.held*0.25*t.px*0.85)+"</div></div>"+
+      "</div>";
+
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("tokEndorseTitle")+"</div></div>"+
+      "<div class='ds' style='margin:-4px 0 10px'>"+
+      (t.endCool>0?U("tokEndorseCool").replace("{n}",t.endCool):U("tokEndorseNote"))+"</div>"+
+      ENDORSERS.map(e=>{
+        const c=endorseCost(t,e), fade=Math.pow(0.78,t.endUsed);
+        const can=t.endCool<=0&&S.debt>=c;
+        return "<div class='chart "+(can?"":"lock")+"' data-en='"+e.id+"'>"+
+          "<div><div class='cn'>"+e.sig+" &nbsp;"+e.name+"</div><div class='cd'>"+e.ds+"</div></div>"+
+          "<div class='cc'>"+money(c)+"<br><span style='color:var(--muted)'>+"+
+          (((1+(e.mult-1)*fade)-1)*100).toFixed(0)+"%</span></div></div>";
+      }).join("");
+
+    h+="<div class='paneHead' style='margin-top:16px'><div class='sect'>"+U("tokProgTitle")+"</div></div>"+
+      "<div class='acts'>"+
+        "<div class='act"+(S.debt>=pc?"":" off")+"' data-t='promote'><div class='an'>"+U("tokPromote")+"</div>"+
+        "<div class='ad'>"+U("tokPromoteDs")+"</div><div class='ac'>"+money(pc)+"</div></div>"+
+        "<div class='act"+(S.debt>=sc?"":" off")+"' data-t='seed'><div class='an'>"+U("tokSeed")+"</div>"+
+        "<div class='ad'>"+U("tokSeedDs")+"</div><div class='ac'>"+money(sc)+"</div></div>"+
+        "<div class='act' data-t='stake'><div class='an'>"+(t.staking?U("tokSuspend"):U("tokOpenStaking"))+"</div>"+
+        "<div class='ad'>"+U("tokStakeDs")+"</div>"+
+        "<div class='ac'>"+(t.staking?U("tokCurrentlyOpen"):U("tokCurrentlyClosed"))+"</div></div>"+
         "<div class='act rug"+(t.held>0?"":" off")+"' data-t='rug'><div class='an'>"+U("tokRug")+"</div>"+
         "<div class='ad'>"+U("tokRugDs")+"</div>"+
-        "<div class='ac'>≈ "+money(t.held*t.px*0.35+t.reserve)+"</div></div>"+
+        "<div class='ac'>≈ "+money(rugValue(t))+"</div></div>"+
       "</div>"+
       "<div class='ds' style='margin-top:14px;line-height:1.85'>"+U("tokFoot")+"</div>";
+    return h;
   });
-  const A={launch:launchToken,promote:promote,seed:seedLiquidity,stake:toggleStaking,
-           sell10:()=>tokSell(0.10),sell25:()=>tokSell(0.25),rug:rugPull};
+  $("#pTok").querySelectorAll("[data-ts]").forEach(el=>el.onclick=()=>{
+    tokp().sel=+el.dataset.ts; dirty();
+  });
+  const nw=document.getElementById("tokNew"); if(nw) nw.onclick=launchToken;
+  const sl=document.getElementById("tokSlot"); if(sl) sl.onclick=buySlot;
+  $("#pTok").querySelectorAll("[data-en]").forEach(el=>el.onclick=()=>{
+    if(el.classList.contains("lock")) return;
+    endorse(tokSel(),ENDORSERS.find(e=>e.id===el.dataset.en));
+  });
+  const A={launch:launchToken,
+           promote:()=>promote(tokSel()), seed:()=>seedLiquidity(tokSel()),
+           stake:()=>toggleStaking(tokSel()), rug:()=>rugPull(tokSel()),
+           buy10:()=>tokBuy(tokSel(),0.10), buy35:()=>tokBuy(tokSel(),0.35),
+           sell10:()=>tokSell(tokSel(),0.10), sell25:()=>tokSell(tokSel(),0.25)};
   $("#pTok").querySelectorAll("[data-t]").forEach(el=>el.onclick=()=>{
-    if(el.classList.contains("off")) return; A[el.dataset.t]();
+    if(el.classList.contains("off")) return; const f=A[el.dataset.t]; if(f) f();
   });
 }
 
@@ -2803,7 +3348,7 @@ function renderRef(){
 }
 
 function renderLed(){
-  const key=S.q+"|"+S.disp.length+"|"+Object.keys(S.ups).length+"|"+Object.keys(S.nodes).length+"|"+S.crises+"|"+Math.round(mkt().realised)+"|"+Math.round(tok().raised)+"|"+Object.keys(war().won).length+"|"+S.era+"|"+S.seign;
+  const key=S.q+"|"+S.disp.length+"|"+Object.keys(S.ups).length+"|"+Object.keys(S.nodes).length+"|"+S.crises+"|"+Math.round(mkt().realised)+"|"+Math.round(tokp().raised)+"|"+Object.keys(war().won).length+"|"+S.era+"|"+S.seign;
   panel("Led",key,()=>
     "<div class='paneHead'><div class='sect'>"+U("ledPosition")+"</div></div>"+
     "<div class='stat'><span>"+U("lEra")+"</span><b>"+S.era+(S.reforms?" ("+S.reforms+" "+U("refReformPl")+")":"")+"</b></div>"+
@@ -2830,7 +3375,8 @@ function renderLed(){
     "<div class='stat'><span>"+U("lmRealised")+"</span><b>"+money(mkt().realised)+"</b></div>"+
     "<div class='stat'><span>"+U("lmDivs")+"</span><b>"+money(mkt().divs)+"</b></div>"+
     "<div class='stat'><span>"+U("lmTax")+"</span><b>"+(taxRate()*100).toFixed(0)+"%</b></div>"+
-    "<div class='stat'><span>"+U("lmTok")+"</span><b>"+money(tok().raised)+"</b></div>"+
+    "<div class='stat'><span>"+U("lmTok")+"</span><b>"+money(tokp().raised)+"</b></div>"+
+    "<div class='stat'><span>"+U("lmTokLive")+"</span><b>"+tokLive().length+" / "+tokp().slots+"</b></div>"+
     "<div class='stat'><span>"+U("lmWar")+"</span><b>"+Object.keys(war().won).length+" / "+TARGETS.length+"</b></div>"+
     "<div class='stat'><span>"+U("lmWarInc")+"</span><b>×"+warInc().toFixed(2)+"</b></div>"+
     "<div class='stat'><span>"+U("lmCharter")+"</span><b>×"+chInc().toFixed(2)+"</b></div>"+
@@ -8447,6 +8993,15 @@ Object.assign(TR.it.ui,{dFounded:"Istituto fondato. La vigilanza è stata inform
 Object.assign(TR.zh.ui,{dFounded:"机构已设立。监管机构已获知会。监管机构并不介意。"});
 Object.assign(TR.ko.ui,{dFounded:"기관 설립. 감독당국에 통보. 감독당국은 개의치 않음."});
 
+/* ===== contenus v1.8 : la Dotation, le portefeuille de jetons, le fil ===== */
+TRADD("fr",{"endups.purpose.name": "La clause d'objet perpétuel", "endups.purpose.nd": "L'acte assigne à la fondation un objet si large qu'aucune dépense ne saurait jamais y contribuer. Capitalisation +0,6 point par trimestre.", "endups.advisors.name": "Un comité consultatif d'anciens superviseurs", "endups.advisors.nd": "Ils savent exactement quelles questions les superviseurs en poste ont appris à poser. Capitalisation +0,8 point par trimestre.", "endups.domicile.name": "Un domicile de complaisance", "endups.domicile.nd": "La fondation est résidente d'une juridiction dotée d'un drapeau, d'un registre et d'aucune question complémentaire. Les dividendes versés à la Dotation ne sont plus retenus à la source.", "endups.mandate.name": "Le mandat de réinvestissement", "endups.mandate.nd": "Toute distribution requiert le vote d'un conseil qui n'a jamais été convoqué. Capitalisation +1,0 point par trimestre.", "endups.matched.name": "Le don abondé", "endups.matched.nd": "Chaque dotation est abondée le trimestre suivant par une fondation affiliée, qui est celle-ci. Les versements sont crédités à 125 %.", "endups.immortal.name": "L'instrument ne peut être révoqué", "endups.immortal.nd": "Ni par vous, ni par vos héritiers, ni par l'État qui a reconnu la fondation d'utilité publique. Capitalisation +1,4 point par trimestre.", "endorse.magnate.name": "Un industriel porté sur la publication", "endorse.magnate.ds": "Il construit des fusées, il construit des voitures, et à deux heures du matin il construit des phrases. L'une d'elles portera sur vous.", "endorse.anchor.name": "Un animateur de deuxième partie de soirée", "endorse.anchor.ds": "Il n'y comprend rien, le dit avec chaleur, et le recommande quand même. Son public trouve cette franchise convaincante.", "endorse.athlete.name": "Un athlète entre deux contrats", "endorse.athlete.ds": "Une photo, un symbole boursier et une légende en trois mots. La mention légale figure à la neuvième ligne.", "endorse.fund.name": "Un fonds qui divulgue sa position après coup", "endorse.fund.ds": "Ils ont pris la position, puis publié l'analyse, dans cet ordre, ce qu'ils appellent de la conviction.", "endorse.minister.name": "Un ministre d'une petite république", "endorse.minister.ds": "Il lui donne cours légal dans une allocution télévisée tournée sur une plage. Le FMI publie un communiqué ; le cours ne s'en émeut pas.", "chain.end.name": "La Dotation", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "Déflationniste par conception : nous brûlons une part de chaque transaction, et une part de chaque question.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "Transfrontalier, instantané, définitif. Deux des trois ont été observés de façon indépendante.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "Un consensus à bilan carbone négatif, audité par un cabinet que nous avons présenté à l'auditeur.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "Un pont entre la finance traditionnelle et l'avenir, avec péage aux deux extrémités.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "Conservation par vous-même : personne ne peut geler vos actifs, vous y compris.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "Un actif de réserve porteur de rendement. En pratique, c'est le rendement qui porte la réserve.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "Les actifs du monde réel, tokenisés. Le monde réel n'a pas été invité à contresigner.", "headlines.18": "Les résultats trimestriels dépassent les attentes, révisées mardi par ceux-là mêmes qui les publient.", "headlines.19": "Un paquet de dérégulation porte le nom de la crise qu'il rend possible.", "headlines.20": "Amende : 0,4 % du trimestre gagné à le faire. L'action monte, l'incertitude étant levée.", "headlines.21": "Une délégation reptilienne prend place en tribune. Le procès-verbal note « aucune présence inhabituelle ».", "headlines.22": "La ligne budgétaire épandage aérien est requalifiée en notoriété de marque para-météorologique.", "headlines.23": "Le président de la commission découvre le secteur deux jours avant que le secteur ne découvre la commission.", "headlines.24": "La ristourne fluor est sursouscrite. Les demandeurs se déclarent bien disposés à son égard.", "headlines.25": "Les particuliers sont invités à penser à long terme par un desk qui a soldé sa position jeudi.", "headlines.26": "Les honoraires de l'auditeur sont qualifiés de non significatifs. L'auditeur les a qualifiés le premier.", "headlines.27": "Extension du sous-sol de Denver approuvée. Les plans sont requalifiés en décoration intérieure.", "headlines.28": "Un banquier central dit « transitoire » et la salle se détend pendant onze mois.", "headlines.29": "Facilité d'urgence ouverte dimanche à minuit, fermée lundi, rouverte définitivement mardi.", "headlines.30": "Des oiseaux sont observés perchés sur des caméras. Des caméras sont observées perchées sur des oiseaux.", "headlines.31": "Déclaration de lobbying déposée. Rendement de la dépense estimé à 22 000 %, indiqué en note comme approximatif.", "headlines.32": "Une nation promet des réformes en échange d'un concours. Le concours ne promet rien en échange des réformes.", "headlines.33": "Un fonds de pension adopte une allocation alternative. L'alternative, c'est nous.", "headlines.34": "Test de résistance réussi par tous les participants, dont les deux qui ensuite n'ont plus existé.", "headlines.35": "Conditions mises à jour. Le fait de continuer à respirer vaut acceptation.", "headlines.36": "Le séminaire du Bois s'achève en avance. Les participants décrivent la météo avec une longueur inhabituelle.", "headlines.37": "Un cabinet est engagé pour trouver les économies. Économies trouvées. Ses honoraires égalent les économies.", "headlines.38": "Un régulateur passe dans le privé, puis revient, puis rejoint un organisme qui supervise les deux.", "headlines.39": "Un produit d'assurance couvre le sinistre, à l'exclusion des circonstances dans lesquelles il survient.", "headlines.40": "La banque présente ses excuses. Excuses émises par un service créé pour les émettre.", "headlines.41": "L'homme qui a refusé les conditions fait désormais l'objet d'une étude sur les non-participants.", "headlines.42": "Le taux est relevé pour combattre l'inflation. L'inflation est relevée pour combattre le taux.", "headlines.43": "Une plateforme suspend les retraits, invoquant une demande massive de retraits.", "headlines.44": "La Lune a été réhypothéquée. Les astronomes demandent au profit de qui.", "headlines.45": "La fuite de données concerne tout le monde. L'entreprise offre à tout le monde douze mois de surveillance, pour regarder faire.", "headlines.46": "Modèle de notation mis à jour. Mêmes titres, meilleures lettres, papier identique.", "headlines.47": "Un fonds souverain investit dans une route dont il vous fera aussi payer l'usage.", "headlines.48": "Poursuite différée acceptée. Le report a lui-même été reporté.", "headlines.49": "Une étude conclut que le logement est inabordable. Étude financée par la partie que cela arrange.", "headlines.50": "Un détenteur anonyme fait bouger le marché avec une phrase et la photo d'un chien.", "headlines.51": "Un jeton reçoit cours légal dans un pays de 300 000 habitants. Volumes inchangés. Couverture médiatique considérable.", "headlines.52": "Cotation annoncée sur une grande plateforme. La plateforme, c'est nous, sous un autre nom de domaine.", "headlines.53": "La fondation créée pour distribuer l'argent annonce un excellent exercice de placement.", "headlines.54": "La commission fixe l'indice de référence. Ses membres tarifent leurs contrats sur cet indice.", "headlines.55": "La société platiste ouvre une succursale dans chaque direction.", "headlines.56": "Plafond de la dette relevé à trois heures du matin, après avoir été déclaré non négociable à vingt et une heures.", "headlines.57": "Un emprunteur lit la clause 14 à voix haute. La clause 14 se refuse à la lecture à voix haute.", "headlines.58": "Le sauvetage est présenté comme un prêt, le prêt comme un don, le don comme du courage politique.", "headlines.59": "Un analyste abaisse notre note. Son employeur découvre qu'il a besoin de nos mandats.", "headlines.60": "La banque centrale imprime une quantité record et prie le public de ne pas en faire toute une histoire.", "headlines.61": "Le rapport du médiateur est publié intégralement, un vendredi, dans une police de caractères.", "ui.tabEnd": "Dotation", "ui.endNone": "Il n'y a pas encore de fondation.", "ui.endNone2": "Posséder le monde rapporte un dividende. Un dividende dépensé est un dividende disparu ; un dividende doté est un dividende qui dote.", "ui.endTitle": "La Dotation", "ui.endEndowed": "apports", "ui.endTaken": "distribué à ce jour", "ui.endMultiple": "croissance des apports", "ui.endPerQuarter": "capitalisation par trimestre", "ui.endNextQuarter": "prochain trimestre", "ui.endNote": "Le capital n'est jamais dépensé — seulement ce qu'il rapporte. Ce que vous y laissez est ce qui capitalise au trimestre suivant, ce qui est tout l'argument, et tout le piège. La fondation survit à vos crises programmées ; une fiducie n'est pas une banque. Elle ne survit pas à une réforme monétaire, parce que rien n'y survit.", "ui.endEndow": "Doter", "ui.endDepositDs": "Le placer hors de votre propre portée, là où il travaille le plus dur.", "ui.endPayoutTitle": "Politique de distribution", "ui.endPayoutNote": "La part de la croissance de chaque trimestre qui vous parvient. Tout ce que vous ne prenez pas reste à l'intérieur et travaille de nouveau. À zéro distribution, la fondation se contente de grossir, ce que l'acte présente comme son objet.", "ui.endDistributed": "de la croissance distribuée", "ui.endKept": "Retenu et capitalisé", "ui.endPaidOut": "Qui vous est distribué", "ui.endAutoTitle": "Instruction permanente sur les dividendes", "ui.endAutoTaxed": "La part de vos dividendes versée directement à la fondation. Elle est retenue à la source à l'entrée, pour l'instant.", "ui.endAutoExempt": "La part de vos dividendes versée directement à la fondation. Rien n'est retenu : la fondation est résidente ailleurs.", "ui.endUpsTitle": "Les instruments de l'acte", "ui.endUpsNote": "Achetés sur le capital de la fondation, ce à quoi sert le capital d'une fondation. Chacun est définitif.", "ui.endDissolveTitle": "Liquidation", "ui.endDissolve": "Rompre la fiducie", "ui.endDissolveDs": "Liquider le capital et le ramener à l'encours. Quarante pour cent vont à ceux qui ont rédigé l'instrument disant que c'était impossible.", "ui.mDissolveTitle": "Rompre la fiducie ?", "ui.mDissolve1": "L'acte dit que le capital est inaliénable. L'acte a été rédigé par un cabinet qui rédige aussi l'exception, et facture les deux.", "ui.mDissolveOut": "Reversé à l'encours :", "ui.mDissolve2": "La capitalisation s'arrête ici. Quarante pour cent du capital sont retenus en honoraires. La fondation continue d'exister, parce que la dissoudre entièrement soulèverait des questions.", "ui.btnDissolveTrust": "Rompre", "ui.dEndUp": "Acte modifié — {n}.", "ui.dDissolve": "La fiducie a été rompue. {m} reversés à l'encours, le solde retenu en honoraires.", "ui.gCompound": "faire gagner à la fondation 80 % de plus que ce qui y a été versé", "ui.endBest": "meilleur atteint", "ui.endBestNote": "Le palier de chapitre retient le meilleur ratio jamais atteint par le fonds : doter davantage ne vous en prive donc jamais.", "ui.lmEndBal": "Capital de la Dotation", "ui.lmEndRate": "Taux de capitalisation", "ui.lmEndMult": "Croissance des apports", "ui.tokSlots": "en cours", "ui.tokBuySlot": "Ouvrir un bureau", "ui.tokDead": "à zéro", "ui.tokFromPeak": "depuis le pic", "ui.tokOverOne": "{n} est terminé. {m} réalisés sur toute sa durée de vie. Les détenteurs ont formé un groupe de discussion, puis une action collective, puis un groupe plus restreint.", "ui.tokPosition": "Votre position", "ui.tokPositionNote": "L'offre est bon marché quand personne n'en veut et chère quand tout le monde en veut, et vous êtes la seule partie à savoir ce qui est programmé ensuite. Achetez les décombres, organisez la reprise, partez avant la fin.", "ui.tokBuy10": "Acheter 10 % du flottant", "ui.tokBuy35": "Acheter 35 % du flottant", "ui.tokBuyDs": "Retirer de l'offre du marché fait monter le cours, effet secondaire que vous aviez budgété.", "ui.tokEndorseTitle": "Mentions rémunérées", "ui.tokEndorseNote": "Aucun d'eux ne divulguera l'accord, parce qu'aucun d'eux n'a été informé qu'il en existe un. La capitalisation bondit d'un coup puis retombe au fil des trimestres suivants ; être de l'autre côté de ce mouvement, c'est tout le métier.", "ui.tokEndorseCool": "La dernière mention fait encore parler. Personne de crédible n'est disponible avant {n} trimestres.", "ui.tokProgTitle": "Le programme", "ui.dTokSlot": "Un {n}e bureau d'émission a été ouvert.", "ui.dEndorse": "{w} a mentionné {n}. La capitalisation a bougé de +{p} % avant la fin de la phrase.", "ui.mRug3b": "Le bureau reste ouvert. La prochaine émission coûtera plus cher à lancer, et on y croira aussi.", "ui.lmTokLive": "Émissions en cours / bureaux"});
+TRADD("es",{"endups.purpose.name": "La cláusula de objeto perpetuo", "endups.purpose.nd": "La escritura designa un objeto tan amplio que ningún gasto podría jamás hacerlo avanzar. Capitalización +0,6 puntos por trimestre.", "endups.advisors.name": "Un consejo asesor de antiguos supervisores", "endups.advisors.nd": "Saben exactamente qué preguntas están adiestrados a formular los supervisores actuales. Capitalización +0,8 puntos por trimestre.", "endups.domicile.name": "Un domicilio de conveniencia", "endups.domicile.nd": "La fundación reside en una jurisdicción con bandera, con registro y sin preguntas de seguimiento. Los dividendos ingresados en la Dotación dejan de estar sujetos a retención.", "endups.mandate.name": "El mandato de reinversión", "endups.mandate.nd": "Las distribuciones exigen el voto de un patronato que nunca ha sido convocado. Capitalización +1,0 puntos por trimestre.", "endups.matched.name": "Donación igualada", "endups.matched.nd": "Cada dotación se completa un trimestre después con un cuarto más, aportado por una fundación afiliada, que es esta. Las aportaciones se abonan al 125%.", "endups.immortal.name": "El instrumento es irrevocable", "endups.immortal.nd": "Ni por usted, ni por sus herederos, ni por el Estado que lo autorizó. Capitalización +1,4 puntos por trimestre.", "endorse.magnate.name": "Un industrial con hábito de publicar", "endorse.magnate.ds": "Construye cohetes, construye coches y, a las dos de la madrugada, construye frases. Una de ellas será sobre usted.", "endorse.anchor.name": "Un presentador de la franja nocturna", "endorse.anchor.ds": "No lo entiende, lo dice con calidez y lo recomienda igualmente. Su público encuentra persuasiva esa honestidad.", "endorse.athlete.name": "Un deportista entre contratos", "endorse.athlete.ds": "Una fotografía, un símbolo de cotización y un pie de tres palabras. La advertencia de cumplimiento va en la novena línea.", "endorse.fund.name": "Un fondo que comunica su posición después", "endorse.fund.ds": "Tomaron la posición y después publicaron la tesis, en ese orden, lo que ellos describen como convicción.", "endorse.minister.name": "Un ministro de una pequeña república", "endorse.minister.ds": "La declara moneda de curso legal en un discurso televisado grabado en una playa. El FMI emite un comunicado; a la cotización le da igual.", "chain.end.name": "La Dotación", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "Deflacionario por diseño: quemamos una parte de cada transacción, y una parte de cada pregunta.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "Transfronterizo, instantáneo, definitivo. Dos de las tres cosas han sido observadas de forma independiente.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "Consenso de huella de carbono negativa, auditado por una firma que nosotros mismos presentamos al auditor.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "Un puente entre las finanzas tradicionales y el futuro, con peaje en los dos extremos.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "Autocustodia, para que nadie pueda congelar sus activos, usted incluido.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "Un activo de reserva que soporta un rendimiento. En la práctica, es el rendimiento el que soporta la reserva.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "Activos del mundo real, tokenizados. Al mundo real no se le pidió que refrendara.", "headlines.18": "Los resultados trimestrales baten las expectativas, revisadas el martes por quienes los presentan.", "headlines.19": "El paquete desregulador lleva el nombre de la crisis que hace posible.", "headlines.20": "Multan a la entidad con el 0,4% del trimestre que ganó haciéndolo. Las acciones suben por la certidumbre.", "headlines.21": "Delegación reptiliana sentada en la tribuna. El acta recoge «asistencia sin particularidades».", "headlines.22": "La partida de fumigación aérea se reclasifica como notoriedad de marca de ámbito meteorológico.", "headlines.23": "El presidente de la comisión descubre el sector dos días antes de que el sector descubra la comisión.", "headlines.24": "La bonificación por fluoración queda sobresuscrita. Los solicitantes declaran sentirse conformes al respecto.", "headlines.25": "Una mesa que cerró su posición el jueves pide a los minoristas que piensen a largo plazo.", "headlines.26": "Los honorarios del auditor se describen como no significativos. El auditor los describió primero.", "headlines.27": "Aprobada la ampliación del subsótano de Denver. Los planos se reclasifican como interiorismo.", "headlines.28": "Un banquero central dice «transitorio» y la sala se relaja durante once meses.", "headlines.29": "Facilidad de emergencia abierta el domingo a medianoche, cerrada el lunes, reabierta con carácter permanente el martes.", "headlines.30": "Se observan pájaros posados sobre cámaras. Se observan cámaras posadas sobre pájaros.", "headlines.31": "Presentada la declaración de lobby. El retorno del gasto se estima en un 22.000%, con nota al pie que lo califica de aproximado.", "headlines.32": "Una nación promete reformas a cambio de una línea. La línea no promete nada a cambio de las reformas.", "headlines.33": "Un fondo de pensiones adopta una asignación alternativa. La alternativa somos nosotros.", "headlines.34": "Todos los participantes superan la prueba de resistencia, incluidos los dos que después no existían.", "headlines.35": "Condiciones actualizadas. Seguir respirando constituye aceptación.", "headlines.36": "El retiro del bosque concluye antes de tiempo. Los asistentes describen el tiempo con inusitada extensión.", "headlines.37": "Se contrata a una consultora para encontrar el ahorro. Ahorro encontrado. Sus honorarios equivalen al ahorro.", "headlines.38": "Un regulador pasa al sector privado, luego vuelve, luego pasa a un organismo que supervisa a ambos.", "headlines.39": "Un seguro cubre el siniestro, con exclusión de las circunstancias en las que el siniestro ocurre.", "headlines.40": "El banco pide disculpas. Las emite un departamento creado para emitirlas.", "headlines.41": "El hombre que rechazó las condiciones es ya objeto de un estudio sobre no participantes.", "headlines.42": "Suben la tasa para combatir la inflación. Sube la inflación para combatir la tasa.", "headlines.43": "Una plataforma de intercambio suspende los reintegros, alegando una demanda abrumadora de reintegros.", "headlines.44": "La Luna ha sido repignorada. Los astrónomos preguntan a favor de quién.", "headlines.45": "La brecha afecta a todo el mundo. La empresa ofrece a todo el mundo doce meses de monitorización para verlo ocurrir.", "headlines.46": "Modelo de calificación actualizado. Los mismos títulos, mejores letras, idéntico papel.", "headlines.47": "Un fondo soberano invierte en una carretera por cuyo uso también le cobrará a usted.", "headlines.48": "Acordado el aplazamiento del proceso. El aplazamiento ha sido a su vez aplazado.", "headlines.49": "Un estudio concluye que la vivienda es inasequible. Lo financia la parte a la que esto le conviene.", "headlines.50": "Un tenedor anónimo mueve el mercado con una frase y la fotografía de un perro.", "headlines.51": "Un token es declarado moneda de curso legal en un país de 300.000 habitantes. El volumen no se inmuta. La cobertura, enorme.", "headlines.52": "Anunciada la cotización en una gran plataforma de intercambio. La plataforma somos nosotros, con otro dominio.", "headlines.53": "La fundación creada para donar el dinero informa de un excelente año de inversión.", "headlines.54": "El comité fija el índice de referencia. Los miembros del comité tarifican sus contratos contra ese índice.", "headlines.55": "La sociedad terraplanista abre una delegación en todas las direcciones.", "headlines.56": "El techo de deuda se eleva a las tres de la madrugada tras ser calificado de innegociable a las nueve de la noche.", "headlines.57": "Un propietario lee en voz alta la cláusula 14. La cláusula 14 declina ser leída en voz alta.", "headlines.58": "El rescate se describe como un préstamo; el préstamo, como una donación; la donación, como liderazgo.", "headlines.59": "Un analista nos rebaja la recomendación. Su empleador descubre que necesita nuestro negocio.", "headlines.60": "El banco central imprime una cantidad récord y pide al público que no lo haga incómodo.", "headlines.61": "El informe del defensor del pueblo se publica íntegro, un viernes, en una tipografía.", "ui.tabEnd": "Dotación", "ui.endNone": "Todavía no hay fundación.", "ui.endNone2": "Poseer el mundo paga un dividendo. Un dividendo gastado es un dividendo perdido; un dividendo dotado es un dividendo que dota.", "ui.endTitle": "La Dotación", "ui.endEndowed": "en dotación", "ui.endTaken": "distribuido hasta la fecha", "ui.endMultiple": "crecimiento sobre lo aportado", "ui.endPerQuarter": "de capitalización por trimestre", "ui.endNextQuarter": "próximo trimestre", "ui.endNote": "El capital no se gasta nunca — solo lo que produce. Lo que usted deje dentro es lo que capitaliza el trimestre siguiente, y ahí está todo el argumento, y toda la trampa. La fundación sobrevive a sus crisis provocadas; un fideicomiso no es un banco. No sobrevive a una reforma monetaria, porque nada lo hace.", "ui.endEndow": "Dotar", "ui.endDepositDs": "Póngalo fuera de su propio alcance, que es donde más rinde.", "ui.endPayoutTitle": "Política de distribución", "ui.endPayoutNote": "La parte del crecimiento de cada trimestre que llega hasta usted. Todo lo que no retire se queda dentro y vuelve a producir. Con cero distribuido, la fundación simplemente se hace más grande, que es lo que la escritura describe como su objeto.", "ui.endDistributed": "del crecimiento distribuido", "ui.endKept": "Retenido y capitalizando", "ui.endPaidOut": "Distribuido a usted", "ui.endAutoTitle": "Instrucción permanente sobre dividendos", "ui.endAutoTaxed": "La parte de sus dividendos que se ingresa directamente en la fundación. Por ahora se le practica retención a la entrada.", "ui.endAutoExempt": "La parte de sus dividendos que se ingresa directamente en la fundación. No se retiene nada: la fundación reside en otra parte.", "ui.endUpsTitle": "Instrumentos de la escritura", "ui.endUpsNote": "Se compran con cargo al propio capital de la fundación, que es para lo que sirve el capital de una fundación. Cada uno es permanente.", "ui.endDissolveTitle": "Liquidación", "ui.endDissolve": "Romper el fideicomiso", "ui.endDissolveDs": "Liquidar el capital y devolverlo al libro. El cuarenta por ciento se lo quedan quienes redactaron el instrumento que decía que no podía hacerse.", "ui.mDissolveTitle": "¿Romper el fideicomiso?", "ui.mDissolve1": "La escritura dice que el capital es inalienable. La escritura la redactó un despacho que también redacta la excepción, y factura por ambas.", "ui.mDissolveOut": "Devuelto al libro:", "ui.mDissolve2": "La capitalización se detiene aquí. El cuarenta por ciento del capital se retiene en honorarios. La fundación sigue existiendo, porque disolverla del todo suscitaría preguntas.", "ui.btnDissolveTrust": "Romperlo", "ui.dEndUp": "Escritura modificada — {n}.", "ui.dDissolve": "El fideicomiso ha sido roto. {m} devueltos al libro; el resto, retenido en honorarios.", "ui.gCompound": "dejar que la fundación gane un 80% más de lo aportado", "ui.endBest": "máximo alcanzado", "ui.endBestNote": "La condición de apertura del capítulo lee el mejor ratio que el fondo haya alcanzado jamás, así que dotar más dinero nunca se lo arrebata.", "ui.lmEndBal": "Capital de la Dotación", "ui.lmEndRate": "Tasa de capitalización", "ui.lmEndMult": "Crecimiento sobre lo aportado", "ui.tokSlots": "activas", "ui.tokBuySlot": "Abrir una mesa", "ui.tokDead": "a cero", "ui.tokFromPeak": "desde máximos", "ui.tokOverOne": "{n} ha terminado. {m} realizados a lo largo de su vida. Los tenedores han formado un grupo de chat, luego una demanda colectiva, luego un grupo de chat más pequeño.", "ui.tokPosition": "Su posición", "ui.tokPositionNote": "La oferta está barata cuando nadie la quiere y cara cuando la quiere todo el mundo, y usted es la única parte que sabe qué está programado a continuación. Compre los escombros, organice la recuperación, márchese antes de que termine.", "ui.tokBuy10": "Comprar el 10% del flotante", "ui.tokBuy35": "Comprar el 35% del flotante", "ui.tokBuyDs": "Retirar oferta del mercado eleva el precio, que es un efecto secundario que usted ya ha presupuestado.", "ui.tokEndorseTitle": "Menciones pagadas", "ui.tokEndorseNote": "Ninguno declarará el acuerdo, porque a ninguno se le ha dicho que exista. La capitalización salta de golpe y vuelve a bajar en los trimestres siguientes; estar al otro lado de eso es toda la habilidad.", "ui.tokEndorseCool": "La última mención todavía se comenta. No hay nadie creíble disponible durante {n} trimestres más.", "ui.tokProgTitle": "El programa", "ui.dTokSlot": "Se ha abierto una {n}.ª mesa de emisión.", "ui.dEndorse": "{w} ha mencionado {n}. La capitalización se movió un +{p}% antes de que terminara la frase.", "ui.mRug3b": "La mesa sigue abierta. La próxima emisión costará más de lanzar. También se la creerán.", "ui.lmTokLive": "Emisiones activas / mesas"});
+TRADD("de",{"endups.purpose.name": "Die Klausel des immerwährenden Zwecks", "endups.purpose.nd": "Die Urkunde benennt einen Zweck, der so weit gefasst ist, dass keine Ausgabe ihn je fördern könnte. Zinseszins +0,6 Punkte pro Quartal.", "endups.advisors.name": "Ein Beirat aus früheren Aufsichtsbeamten", "endups.advisors.nd": "Sie wissen genau, welche Fragen die heutige Aufsicht zu stellen gelernt hat. Zinseszins +0,8 Punkte pro Quartal.", "endups.domicile.name": "Ein Sitz nach Zweckmäßigkeit", "endups.domicile.nd": "Die Stiftung ist in einer Rechtsordnung ansässig, die eine Flagge hat, ein Register und keine Rückfragen. Dividenden, die in die Stiftung fließen, unterliegen keinem Einbehalt mehr.", "endups.mandate.name": "Das Wiederanlagegebot", "endups.mandate.nd": "Ausschüttungen bedürfen des Beschlusses eines Gremiums, das nie einberufen wurde. Zinseszins +1,0 Punkte pro Quartal.", "endups.matched.name": "Die aufgestockte Zuwendung", "endups.matched.nd": "Jede Zuwendung wird ein Quartal später von einer verbundenen Stiftung aufgestockt, und zwar von dieser. Einlagen werden zu 125 % gutgeschrieben.", "endups.immortal.name": "Das Instrument ist unwiderruflich", "endups.immortal.nd": "Nicht durch Sie, nicht durch Ihre Erben, nicht durch den Staat, der es genehmigt hat. Zinseszins +1,4 Punkte pro Quartal.", "endorse.magnate.name": "Ein Industrieller mit Mitteilungsdrang", "endorse.magnate.ds": "Er baut Raketen, er baut Autos, und um zwei Uhr nachts baut er Sätze. Einer davon wird von Ihnen handeln.", "endorse.anchor.name": "Ein Moderator zur späten Sendestunde", "endorse.anchor.ds": "Er versteht es nicht, sagt das herzlich und empfiehlt es trotzdem. Sein Publikum findet die Offenheit überzeugend.", "endorse.athlete.name": "Ein Sportler zwischen zwei Verträgen", "endorse.athlete.ds": "Ein Foto, ein Kürzel und eine Bildunterschrift aus drei Wörtern. Der Compliance-Hinweis steht in der neunten Zeile.", "endorse.fund.name": "Ein Fonds, der seine Position im Nachhinein offenlegt", "endorse.fund.ds": "Erst nahmen sie die Position ein, dann veröffentlichten sie die These, in dieser Reihenfolge, was dort Überzeugung heißt.", "endorse.minister.name": "Ein Minister einer kleinen Republik", "endorse.minister.ds": "Er erklärt ihn in einer Fernsehansprache am Strand zum gesetzlichen Zahlungsmittel. Der IWF gibt eine Erklärung ab; den Kurs kümmert das nicht.", "chain.end.name": "Die Stiftung", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "Deflationär von Grund auf: Wir verbrennen einen Teil jeder Transaktion und einen Teil jeder Frage.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "Grenzüberschreitend, sofort, endgültig. Zwei der drei wurden unabhängig beobachtet.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "Klimanegativer Konsens, geprüft von einer Gesellschaft, die wir dem Prüfer vorgestellt haben.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "Eine Brücke zwischen der klassischen Finanzwelt und der Zukunft, an beiden Enden mautpflichtig.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "Eigenverwahrung, damit niemand Ihre Werte einfrieren kann, Sie eingeschlossen.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "Ein renditetragender Reservewert. In der Praxis trägt die Rendite die Reserve.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "Reale Vermögenswerte, tokenisiert. Die reale Welt wurde nicht um Gegenzeichnung gebeten.", "headlines.18": "Quartalszahlen übertreffen die Erwartungen, die am Dienstag von denen angepasst wurden, die sie nun vorlegen.", "headlines.19": "Deregulierungspaket nach der Krise benannt, die es ermöglicht.", "headlines.20": "Haus zu einem Bußgeld in Höhe von 0,4 % des damit verdienten Quartals verurteilt. Aktie steigt auf die Gewissheit hin.", "headlines.21": "Reptiloide Delegation auf der Tribüne platziert. Das Protokoll vermerkt „keine ungewöhnliche Anwesenheit“.", "headlines.22": "Haushaltsposten Sprühflug umgewidmet zu wetternaher Markenbekanntheit.", "headlines.23": "Ausschussvorsitz entdeckt die Branche zwei Tage, bevor die Branche den Ausschuss entdeckt.", "headlines.24": "Fluorid-Zuschuss überzeichnet. Antragsteller berichten, sich damit einverstanden zu fühlen.", "headlines.25": "Privatanleger werden zu langfristigem Denken angehalten — von einem Desk, das am Donnerstag glattgestellt hat.", "headlines.26": "Das Honorar des Prüfers wird als unwesentlich bezeichnet. Der Prüfer hat es zuerst so bezeichnet.", "headlines.27": "Erweiterung des Denver-Untergeschosses genehmigt. Baupläne umgewidmet zu Innenarchitektur.", "headlines.28": "Zentralbanker sagt „vorübergehend“, und der Saal entspannt sich für elf Monate.", "headlines.29": "Notfazilität sonntags um Mitternacht eröffnet, montags geschlossen, dienstags dauerhaft wiedereröffnet.", "headlines.30": "Vögel beim Sitzen auf Kameras beobachtet. Kameras beim Sitzen auf Vögeln beobachtet.", "headlines.31": "Lobbyregistereintrag eingereicht. Rendite der Ausgaben auf 22.000 % geschätzt, in der Fußnote als ungefähr bezeichnet.", "headlines.32": "Staat sagt Reformen für eine Kreditlinie zu. Die Kreditlinie sagt für die Reformen nichts zu.", "headlines.33": "Pensionsfonds nimmt eine alternative Anlage auf. Die Alternative sind wir.", "headlines.34": "Stresstest von allen Teilnehmern bestanden, auch von den beiden, die es später nicht mehr gab.", "headlines.35": "Bedingungen aktualisiert. Fortgesetztes Atmen gilt als Zustimmung.", "headlines.36": "Klausur im Hain endet vorzeitig. Teilnehmer beschreiben das Wetter ungewöhnlich ausführlich.", "headlines.37": "Berater beauftragt, die Einsparungen zu finden. Einsparungen gefunden. Das Honorar entspricht den Einsparungen.", "headlines.38": "Aufseher wechselt in die Privatwirtschaft, dann zurück, dann in ein Gremium, das beide beaufsichtigt.", "headlines.39": "Versicherungsprodukt deckt das Ereignis, ausgenommen die Umstände, unter denen das Ereignis eintritt.", "headlines.40": "Bank entschuldigt sich. Die Entschuldigung stammt aus einer Abteilung, die zu ihrer Abgabe geschaffen wurde.", "headlines.41": "Mann, der die Bedingungen ablehnte, ist nun Gegenstand einer Studie über Nichtteilnehmer.", "headlines.42": "Zins erhöht, um die Inflation zu bekämpfen. Inflation erhöht, um den Zins zu bekämpfen.", "headlines.43": "Börse setzt Auszahlungen aus und verweist auf die überwältigende Nachfrage nach Auszahlungen.", "headlines.44": "Der Mond wurde weiterverpfändet. Astronomen fragen, an wen.", "headlines.45": "Datenleck betrifft alle. Das Unternehmen bietet allen zwölf Monate an, dabei zuzusehen.", "headlines.46": "Ratingmodell aktualisiert. Dieselben Papiere, bessere Buchstaben, identisches Papier.", "headlines.47": "Staatsfonds investiert in eine Straße, für deren Nutzung er Ihnen zugleich eine Maut berechnen wird.", "headlines.48": "Aufgeschobene Strafverfolgung vereinbart. Der Aufschub wurde seinerseits aufgeschoben.", "headlines.49": "Studie stellt fest, dass Wohnen unbezahlbar ist. Finanziert von der Seite, der das gelegen kommt.", "headlines.50": "Anonymer Halter bewegt den Markt mit einem Satz und dem Foto eines Hundes.", "headlines.51": "Token in einem Staat mit 300.000 Einwohnern zum gesetzlichen Zahlungsmittel erklärt. Umsatz unverändert. Berichterstattung gewaltig.", "headlines.52": "Notierung an einer großen Börse angekündigt. Die Börse sind wir, unter anderer Domain.", "headlines.53": "Stiftung, gegründet zur Ausschüttung des Geldes, meldet ein starkes Anlagejahr.", "headlines.54": "Der Ausschuss setzt den Referenzsatz fest. Die Mitglieder des Ausschusses bepreisen ihre Verträge gegen den Referenzsatz.", "headlines.55": "Flacherde-Gesellschaft eröffnet in jeder Richtung eine Zweigstelle.", "headlines.56": "Schuldenobergrenze um drei Uhr nachts angehoben, nachdem sie um neun Uhr abends als nicht verhandelbar bezeichnet worden war.", "headlines.57": "Eigenheimbesitzer liest Klausel 14 laut vor. Klausel 14 lehnt es ab, laut vorgelesen zu werden.", "headlines.58": "Rettung als Darlehen bezeichnet, Darlehen als Geschenk, Geschenk als Führungsstärke.", "headlines.59": "Analyst stuft uns herab. Der Arbeitgeber des Analysten stellt fest, dass er unser Geschäft braucht.", "headlines.60": "Zentralbank druckt eine Rekordmenge und bittet die Öffentlichkeit, es nicht seltsam zu machen.", "headlines.61": "Bericht des Ombudsmanns vollständig veröffentlicht, an einem Freitag, in einer Schriftart.", "ui.tabEnd": "Stiftung", "ui.endNone": "Noch besteht keine Stiftung.", "ui.endNone2": "Die Welt zu besitzen zahlt eine Dividende. Eine ausgegebene Dividende ist fort; eine gestiftete Dividende ist eine Dividende, die weiter stiftet.", "ui.endTitle": "Die Stiftung", "ui.endEndowed": "gestiftet", "ui.endTaken": "bisher ausgeschüttet", "ui.endMultiple": "Zuwachs auf Einlagen", "ui.endPerQuarter": "Zinseszins pro Quartal", "ui.endNextQuarter": "nächstes Quartal", "ui.endNote": "Das Kapital wird nie ausgegeben — nur sein Ertrag. Was Sie darin lassen, ist das, was im nächsten Quartal Zinseszins trägt, und darin liegt das gesamte Argument und die gesamte Falle. Die Stiftung übersteht Ihre inszenierten Krisen; eine Stiftung ist keine Bank. Eine Währungsreform übersteht sie nicht, denn das übersteht nichts.", "ui.endEndow": "Stiften", "ui.endDepositDs": "Bringen Sie es außerhalb Ihrer eigenen Reichweite; dort arbeitet es am härtesten.", "ui.endPayoutTitle": "Ausschüttungspolitik", "ui.endPayoutNote": "Der Anteil am Zuwachs jedes Quartals, der bei Ihnen ankommt. Alles, was Sie nicht entnehmen, bleibt drinnen und erwirtschaftet erneut. Bei null Ausschüttung wird die Stiftung schlicht größer, was die Urkunde als ihren Zweck bezeichnet.", "ui.endDistributed": "des Zuwachses ausgeschüttet", "ui.endKept": "Thesauriert und verzinst", "ui.endPaidOut": "An Sie ausgeschüttet", "ui.endAutoTitle": "Dauerauftrag auf Dividenden", "ui.endAutoTaxed": "Der Anteil Ihrer Dividenden, der unmittelbar in die Stiftung fließt. Er wird auf dem Weg hinein vorerst noch einbehalten.", "ui.endAutoExempt": "Der Anteil Ihrer Dividenden, der unmittelbar in die Stiftung fließt. Es wird nichts einbehalten: Die Stiftung ist anderswo ansässig.", "ui.endUpsTitle": "Bestimmungen der Urkunde", "ui.endUpsNote": "Erworben aus dem eigenen Kapital der Stiftung, wofür das Kapital einer Stiftung da ist. Jede von ihnen ist dauerhaft.", "ui.endDissolveTitle": "Abwicklung", "ui.endDissolve": "Die Stiftung brechen", "ui.endDissolveDs": "Das Kapital liquidieren und zurück ins Buch nehmen. Vierzig Prozent gehen an die Leute, die das Instrument entworfen haben — mit dem Hinweis, dies sei nicht möglich.", "ui.mDissolveTitle": "Die Stiftung brechen?", "ui.mDissolve1": "Die Urkunde sagt, das Kapital sei unveräußerlich. Die Urkunde wurde von einer Kanzlei entworfen, die auch die Ausnahme entwirft und beides in Rechnung stellt.", "ui.mDissolveOut": "Zurück ins Buch:", "ui.mDissolve2": "Der Zinseszins endet hier. Vierzig Prozent des Kapitals werden als Gebühren einbehalten. Die Stiftung besteht fort, denn sie vollständig aufzulösen würde Fragen aufwerfen.", "ui.btnDissolveTrust": "Brechen", "ui.dEndUp": "Urkunde geändert — {n}.", "ui.dDissolve": "Die Stiftung wurde gebrochen. {m} zurück ins Buch, der Rest als Gebühren einbehalten.", "ui.gCompound": "Die Stiftung 80 % mehr erwirtschaften lassen, als in sie eingelegt wurde", "ui.endBest": "Bestwert", "ui.endBestNote": "Die Kapitelschwelle liest den besten Faktor, den die Stiftung je erreicht hat; weitere Einlagen nehmen ihn Ihnen also nie wieder weg.", "ui.lmEndBal": "Stiftungskapital", "ui.lmEndRate": "Zinseszinssatz", "ui.lmEndMult": "Zuwachs auf Einlagen", "ui.tokSlots": "aktiv", "ui.tokBuySlot": "Desk eröffnen", "ui.tokDead": "auf null", "ui.tokFromPeak": "vom Höchststand", "ui.tokOverOne": "{n} ist beendet. {m} über die gesamte Laufzeit realisiert. Die Halter haben eine Gruppe gegründet, dann eine Sammelklage, dann eine kleinere Gruppe.", "ui.tokPosition": "Ihre Position", "ui.tokPositionNote": "Angebot ist billig, wenn es niemand will, und teuer, wenn es alle wollen — und Sie sind die einzige Partei, die weiß, was als Nächstes angesetzt ist. Kaufen Sie die Trümmer, arrangieren Sie die Erholung, gehen Sie, bevor es vorbei ist.", "ui.tokBuy10": "10 % des Float kaufen", "ui.tokBuy35": "35 % des Float kaufen", "ui.tokBuyDs": "Angebot vom Markt zu nehmen hebt den Kurs — eine Nebenwirkung, die Sie eingeplant haben.", "ui.tokEndorseTitle": "Bezahlte Erwähnungen", "ui.tokEndorseNote": "Keiner von ihnen wird die Abrede offenlegen, weil keinem von ihnen gesagt wurde, dass es eine gibt. Die Marktkapitalisierung springt sofort und kommt über die folgenden Quartale wieder herunter; auf der anderen Seite davon zu stehen ist die ganze Kunst.", "ui.tokEndorseCool": "Die letzte Erwähnung wird noch besprochen. Für weitere {n} Quartale ist niemand von Glaubwürdigkeit verfügbar.", "ui.tokProgTitle": "Das Programm", "ui.dTokSlot": "Ein {n}. Emissionsdesk wurde eröffnet.", "ui.dEndorse": "{w} hat {n} erwähnt. Die Marktkapitalisierung bewegte sich +{p} %, bevor der Satz zu Ende war.", "ui.mRug3b": "Das Desk bleibt offen. Die nächste Emission wird in der Auflage mehr kosten. Man wird ihr ebenfalls glauben.", "ui.lmTokLive": "Aktive Emissionen / Desks"});
+TRADD("pt",{"endups.purpose.name": "A Cláusula de Finalidade Perpétua", "endups.purpose.nd": "A escritura nomeia uma finalidade tão ampla que nenhuma despesa jamais poderia promovê-la. Capitalização +0,6 pts por trimestre.", "endups.advisors.name": "Um Conselho Consultivo de Ex-Reguladores", "endups.advisors.nd": "Eles sabem exatamente quais perguntas os reguladores atuais foram treinados para fazer. Capitalização +0,8 pts por trimestre.", "endups.domicile.name": "Um Domicílio de Conveniência", "endups.domicile.nd": "A fundação é residente numa jurisdição com bandeira, registro público e nenhuma pergunta de acompanhamento. Os dividendos aportados ao Fundo deixam de sofrer retenção.", "endups.mandate.name": "O Mandato de Reinvestimento", "endups.mandate.nd": "As distribuições dependem do voto de um conselho que nunca foi convocado. Capitalização +1,0 pts por trimestre.", "endups.matched.name": "Doação com Contrapartida", "endups.matched.nd": "Cada aporte recebe contrapartida, um trimestre depois, de uma fundação coligada, que é esta. Os depósitos são creditados a 125%.", "endups.immortal.name": "O Instrumento Não Pode Ser Revogado", "endups.immortal.nd": "Nem por você, nem pelos seus herdeiros, nem pelo Estado que o autorizou. Capitalização +1,4 pts por trimestre.", "endorse.magnate.name": "Um Industrial com o Hábito de Postar", "endorse.magnate.ds": "Ele constrói foguetes, constrói carros e, às duas da manhã, constrói frases. Uma delas será sobre você.", "endorse.anchor.name": "Um Apresentador do Fim da Noite", "endorse.anchor.ds": "Ele não entende do assunto, diz isso com simpatia e recomenda mesmo assim. O público dele acha a honestidade convincente.", "endorse.athlete.name": "Um Atleta Entre Contratos", "endorse.athlete.ds": "Uma fotografia, um código de negociação e uma legenda de três palavras. O aviso de compliance está na nona linha.", "endorse.fund.name": "Um Fundo Que Divulga a Posição Depois", "endorse.fund.ds": "Eles montaram a posição e só então publicaram a tese, nessa ordem, o que descrevem como convicção.", "endorse.minister.name": "Um Ministro de uma Pequena República", "endorse.minister.ds": "Ele o declara moeda de curso legal num pronunciamento televisionado gravado numa praia. O FMI emite uma nota; o preço não se importa.", "chain.end.name": "O Fundo Patrimonial", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "Deflacionário por projeto: queimamos uma fração de cada transação e uma fração de cada pergunta.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "Transfronteiriço, instantâneo, definitivo. Dois dos três já foram observados de forma independente.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "Consenso com pegada negativa de carbono, auditado por uma empresa que nós apresentamos ao auditor.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "Uma ponte entre as finanças tradicionais e o futuro, com pedágio nas duas cabeceiras.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "Autocustódia, para que ninguém possa congelar os seus ativos, inclusive você.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "Um ativo de reserva que carrega rendimento. Na prática, é o rendimento que carrega a reserva.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "Ativos do mundo real, tokenizados. Não se pediu ao mundo real que referendasse.", "headlines.18": "Resultados trimestrais superam as expectativas, revisadas na terça pelas mesmas pessoas que os divulgam.", "headlines.19": "Pacote de desregulamentação recebe o nome da crise que ele torna possível.", "headlines.20": "Instituição é multada em 0,4% do trimestre que ganhou fazendo aquilo. Ações sobem com a certeza.", "headlines.21": "Delegação reptiliana acomodada nas galerias. A ata registra 'nenhuma presença fora do comum'.", "headlines.22": "Rubrica orçamentária de chemtrails reclassificada como reconhecimento de marca de natureza meteorológica.", "headlines.23": "Presidente da comissão descobre o setor dois dias antes de o setor descobrir a comissão.", "headlines.24": "Subsídio de fluoretação tem procura acima da oferta. Os inscritos relatam sentir-se bastante concordantes a respeito.", "headlines.25": "Investidores pessoa física são instados a pensar no longo prazo por uma mesa que zerou a posição na quinta.", "headlines.26": "Os honorários do auditor são descritos como imateriais. Quem os descreveu primeiro foi o auditor.", "headlines.27": "Aprovada a ampliação do subsolo de Denver. Plantas reclassificadas como design de interiores.", "headlines.28": "Dirigente do banco central diz 'transitório' e a sala relaxa por onze meses.", "headlines.29": "Linha de emergência aberta à meia-noite de domingo, fechada na segunda, reaberta em definitivo na terça.", "headlines.30": "Pássaros observados pousando em câmeras. Câmeras observadas pousando em pássaros.", "headlines.31": "Declaração de lobby protocolada. Retorno sobre o gasto estimado em 22.000%, com nota de rodapé indicando ser aproximado.", "headlines.32": "Nação promete reformas em troca de uma linha de crédito. A linha não promete nada em troca das reformas.", "headlines.33": "Fundo de pensão adota uma alocação alternativa. A alternativa somos nós.", "headlines.34": "Teste de estresse aprovado por todos os participantes, inclusive os dois que depois não existiam.", "headlines.35": "Termos atualizados. Continuar respirando constitui aceitação.", "headlines.36": "Retiro no bosque termina antes do previsto. Os participantes descrevem o tempo com uma extensão incomum.", "headlines.37": "Consultoria contratada para achar a economia. Economia achada. Os honorários da consultoria equivalem à economia.", "headlines.38": "Regulador vai para o setor privado, depois volta, depois vai para um órgão que fiscaliza os dois.", "headlines.39": "Produto de seguro cobre o evento, excluídas as circunstâncias em que o evento ocorre.", "headlines.40": "Banco pede desculpas. O pedido é emitido por um departamento criado para emiti-lo.", "headlines.41": "Homem que recusou os termos agora é objeto de um estudo sobre não participantes.", "headlines.42": "Juros sobem para combater a inflação. Inflação sobe para combater os juros.", "headlines.43": "Corretora suspende os saques, alegando demanda avassaladora por saques.", "headlines.44": "A Lua foi reempenhada. Os astrônomos perguntam a quem.", "headlines.45": "Vazamento atinge todo mundo. A empresa oferece a todo mundo doze meses de monitoramento para ver aquilo acontecer.", "headlines.46": "Modelo de rating atualizado. Mesmos títulos, letras melhores, papel idêntico.", "headlines.47": "Fundo soberano investe numa estrada pelo uso da qual também vai cobrar de você.", "headlines.48": "Ação penal adiada por acordo. O próprio adiamento foi adiado.", "headlines.49": "Estudo conclui que a moradia está inacessível. Estudo financiado pela parte que acha isso conveniente.", "headlines.50": "Detentor anônimo move o mercado com uma frase e uma fotografia de um cachorro.", "headlines.51": "Token declarado moeda de curso legal numa nação de 300 mil habitantes. Volume inalterado. Repercussão enorme.", "headlines.52": "Anunciada a listagem numa grande corretora. A corretora somos nós, usando outro domínio.", "headlines.53": "Fundação criada para doar o dinheiro reporta um forte ano de investimentos.", "headlines.54": "O comitê fixa o indexador. Os membros do comitê precificam contratos contra o indexador.", "headlines.55": "Sociedade terraplanista abre uma filial em cada direção.", "headlines.56": "Teto da dívida elevado às 3h após ser chamado de inegociável às 21h.", "headlines.57": "Proprietário lê a cláusula 14 em voz alta. A cláusula 14 se recusa a ser lida em voz alta.", "headlines.58": "Socorro descrito como empréstimo, empréstimo descrito como doação, doação descrita como liderança.", "headlines.59": "Analista rebaixa a nossa recomendação. O empregador do analista descobre que precisa dos nossos negócios.", "headlines.60": "Banco central imprime quantidade recorde e pede ao público que não torne a coisa estranha.", "headlines.61": "Relatório do ouvidor publicado na íntegra, numa sexta-feira, numa fonte.", "ui.tabEnd": "Fundo", "ui.endNone": "Ainda não há fundação.", "ui.endNone2": "Possuir o mundo paga dividendos. Um dividendo gasto é um dividendo perdido; um dividendo doado é um dividendo que segue doando.", "ui.endTitle": "O Fundo Patrimonial", "ui.endEndowed": "aportados", "ui.endTaken": "distribuído até aqui", "ui.endMultiple": "crescimento sobre os aportes", "ui.endPerQuarter": "de capitalização por trimestre", "ui.endNextQuarter": "no próximo trimestre", "ui.endNote": "O capital nunca é gasto — apenas o que ele rende. O que você deixar dentro é o que capitaliza no trimestre seguinte, e nisso está todo o argumento, e toda a armadilha. A fundação sobrevive às crises que você provoca; um fundo patrimonial não é um banco. Ela não sobrevive a uma reforma monetária, porque nada sobrevive.", "ui.endEndow": "Aportar", "ui.endDepositDs": "Ponha o dinheiro fora do seu próprio alcance, que é onde ele trabalha mais.", "ui.endPayoutTitle": "Política de Distribuição", "ui.endPayoutNote": "A parcela do crescimento de cada trimestre que chega até você. Tudo o que você não retira permanece dentro e rende de novo. Com nada distribuído, a fundação simplesmente fica maior, o que a escritura descreve como sua finalidade.", "ui.endDistributed": "do crescimento distribuído", "ui.endKept": "Retido e capitalizando", "ui.endPaidOut": "Distribuído a você", "ui.endAutoTitle": "Instrução Permanente sobre Dividendos", "ui.endAutoTaxed": "A parcela dos seus dividendos que vai direto para a fundação. Por ora, sofre retenção na entrada.", "ui.endAutoExempt": "A parcela dos seus dividendos que vai direto para a fundação. Nada é retido: a fundação é residente em outro lugar.", "ui.endUpsTitle": "Instrumentos da Escritura", "ui.endUpsNote": "Comprados com o próprio capital da fundação, que é para isso que serve o capital de uma fundação. Cada um deles é permanente.", "ui.endDissolveTitle": "Liquidação", "ui.endDissolve": "Romper o Instrumento", "ui.endDissolveDs": "Liquidar o capital e trazê-lo de volta para o livro-razão. Quarenta por cento fica com quem redigiu o instrumento dizendo que isso não podia ser feito.", "ui.mDissolveTitle": "Romper o Instrumento?", "ui.mDissolve1": "A escritura diz que o capital é inalienável. A escritura foi redigida por um escritório que também redige a exceção, e cobra pelas duas.", "ui.mDissolveOut": "Devolvido ao livro-razão:", "ui.mDissolve2": "A capitalização para aqui. Quarenta por cento do capital fica retido em honorários. A fundação continua a existir, porque dissolvê-la por completo levantaria perguntas.", "ui.btnDissolveTrust": "Romper", "ui.dEndUp": "Escritura aditada — {n}.", "ui.dDissolve": "O instrumento foi rompido. {m} devolvidos ao livro-razão, o saldo retido em honorários.", "ui.gCompound": "fazer a fundação render 80% a mais do que foi aportado nela", "ui.endBest": "melhor alcançado", "ui.endBestNote": "A meta do capítulo lê a melhor razão que o fundo já alcançou, de modo que aportar mais dinheiro nunca tira isso de você.", "ui.lmEndBal": "Capital do fundo", "ui.lmEndRate": "Taxa de capitalização", "ui.lmEndMult": "Crescimento sobre os aportes", "ui.tokSlots": "ativas", "ui.tokBuySlot": "Abrir uma Mesa", "ui.tokDead": "foi a zero", "ui.tokFromPeak": "do topo", "ui.tokOverOne": "{n} acabou. {m} realizados ao longo de sua vida. Os detentores formaram um grupo de mensagens, depois uma ação coletiva, depois um grupo menor.", "ui.tokPosition": "Sua Posição", "ui.tokPositionNote": "A oferta é barata quando ninguém a quer e cara quando todos a querem, e você é a única parte que sabe o que está agendado a seguir. Compre os escombros, arranje a recuperação, saia antes do fim.", "ui.tokBuy10": "Comprar 10% do free float", "ui.tokBuy35": "Comprar 35% do free float", "ui.tokBuyDs": "Tirar oferta do mercado eleva o preço, um efeito colateral que você já orçou.", "ui.tokEndorseTitle": "Menções Pagas", "ui.tokEndorseNote": "Nenhum deles vai divulgar o arranjo, porque a nenhum deles foi dito que existe um. O valor de mercado salta de imediato e recua nos trimestres seguintes; estar do outro lado disso é toda a habilidade.", "ui.tokEndorseCool": "A última menção ainda está sendo comentada. Ninguém com credibilidade está disponível pelos próximos {n} trimestres.", "ui.tokProgTitle": "O Programa", "ui.dTokSlot": "Uma {n}ª mesa de emissão foi aberta.", "ui.dEndorse": "{w} mencionou {n}. O valor de mercado subiu +{p}% antes de a frase terminar.", "ui.mRug3b": "A mesa continua aberta. A próxima emissão vai custar mais para lançar. E também vão acreditar nela.", "ui.lmTokLive": "Emissões ativas / mesas"});
+TRADD("it",{"endups.purpose.name": "La Clausola di Scopo Perpetuo", "endups.purpose.nd": "L'atto indica uno scopo così ampio che nessuna spesa potrebbe mai contribuire a realizzarlo. Capitalizzazione +0,6 pt a trimestre.", "endups.advisors.name": "Un Comitato Consultivo di Ex Funzionari di Vigilanza", "endups.advisors.nd": "Sanno con precisione quali domande i funzionari in carica sono addestrati a porre. Capitalizzazione +0,8 pt a trimestre.", "endups.domicile.name": "Un Domicilio di Comodo", "endups.domicile.nd": "La fondazione è residente in una giurisdizione dotata di bandiera, di un registro e di nessuna domanda successiva. Sui dividendi conferiti alla Dotazione non si applica più alcuna ritenuta.", "endups.mandate.name": "Il Mandato di Reinvestimento", "endups.mandate.nd": "Le distribuzioni richiedono il voto di un consiglio che non è mai stato convocato. Capitalizzazione +1,0 pt a trimestre.", "endups.matched.name": "La Donazione Abbinata", "endups.matched.nd": "Ogni conferimento viene abbinato nel trimestre successivo da una fondazione collegata, che è questa. I versamenti sono accreditati al 125%.", "endups.immortal.name": "L'Atto Non È Revocabile", "endups.immortal.nd": "Non da voi, non dai vostri eredi, non dallo Stato che lo ha autorizzato. Capitalizzazione +1,4 pt a trimestre.", "endorse.magnate.name": "Un Industriale con il Vizio di Postare", "endorse.magnate.ds": "Costruisce razzi, costruisce automobili e alle due del mattino costruisce frasi. Una di esse riguarderà voi.", "endorse.anchor.name": "Un Conduttore della Seconda Serata", "endorse.anchor.ds": "Non lo capisce, lo dice con calore e lo consiglia comunque. Il suo pubblico trova quell'onestà persuasiva.", "endorse.athlete.name": "Un Atleta tra un Contratto e l'Altro", "endorse.athlete.ds": "Una fotografia, un simbolo di borsa e una didascalia di tre parole. L'informativa di conformità è alla nona riga.", "endorse.fund.name": "Un Fondo che Comunica la Posizione a Cose Fatte", "endorse.fund.ds": "Hanno preso la posizione, poi hanno pubblicato la tesi, in quest'ordine, cosa che definiscono convinzione.", "endorse.minister.name": "Un Ministro di una Piccola Repubblica", "endorse.minister.ds": "Lo dichiara moneta a corso legale in un discorso televisivo girato su una spiaggia. Il Fondo Monetario diffonde un comunicato; il prezzo non se ne cura.", "chain.end.name": "La Dotazione", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "Deflazionistico per progetto: bruciamo una parte di ogni transazione, e una parte di ogni domanda.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "Transfrontaliero, istantaneo, definitivo. Due delle tre cose sono state osservate in modo indipendente.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "Consenso a emissioni negative, certificato da una società che abbiamo presentato noi al revisore.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "Un ponte fra la finanza tradizionale e il futuro, con pedaggio a entrambe le estremità.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "Autocustodia, così nessuno può congelare i vostri averi, voi compresi.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "Un attivo di riserva che produce rendimento. In pratica è il rendimento a produrre la riserva.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "Attivi del mondo reale, tokenizzati. Al mondo reale non è stato chiesto di controfirmare.", "headlines.18": "I risultati trimestrali battono le attese, riviste martedì da chi li presenta.", "headlines.19": "Pacchetto di liberalizzazioni intitolato alla crisi che rende possibile.", "headlines.20": "Sanzione a una società pari allo 0,4% del trimestre guadagnato facendolo. Il titolo sale sulla certezza.", "headlines.21": "Delegazione rettiliana in tribuna. Il verbale registra «nessuna presenza inconsueta».", "headlines.22": "La voce di bilancio per le scie chimiche è riclassificata come notorietà di marca a carattere meteorologico.", "headlines.23": "Il presidente della commissione scopre il settore due giorni prima che il settore scopra la commissione.", "headlines.24": "Richieste superiori alla disponibilità per il rimborso sul fluoro. I richiedenti si dichiarano bendisposti al riguardo.", "headlines.25": "I piccoli risparmiatori sono invitati a ragionare sul lungo periodo da un desk che ha chiuso la posizione giovedì.", "headlines.26": "Il compenso del revisore è definito irrilevante. È stato il revisore a definirlo per primo.", "headlines.27": "Approvato l'ampliamento del sotto-seminterrato di Denver. I progetti sono riclassificati come arredamento d'interni.", "headlines.28": "Un banchiere centrale dice «transitorio» e la sala si rilassa per undici mesi.", "headlines.29": "Linea di emergenza aperta domenica a mezzanotte, chiusa lunedì, riaperta in via permanente martedì.", "headlines.30": "Uccelli osservati mentre si posano sulle telecamere. Telecamere osservate mentre si posano sugli uccelli.", "headlines.31": "Depositata la dichiarazione sulle attività di lobbying. Rendimento della spesa stimato al 22.000%, indicato in nota come approssimativo.", "headlines.32": "Una nazione si impegna a riformare in cambio di una linea di credito. La linea di credito non si impegna a nulla in cambio della riforma.", "headlines.33": "Un fondo pensione adotta un'allocazione alternativa. L'alternativa siamo noi.", "headlines.34": "Prova di stress superata da tutti i partecipanti, compresi i due che in seguito non esistevano.", "headlines.35": "Condizioni aggiornate. Il continuare a respirare costituisce accettazione.", "headlines.36": "Si conclude in anticipo il ritiro nel boschetto. I partecipanti descrivono il tempo atmosferico con insolita dovizia.", "headlines.37": "Un consulente è incaricato di individuare i risparmi. I risparmi sono individuati. Il compenso del consulente è pari ai risparmi.", "headlines.38": "Un funzionario della vigilanza passa al privato, poi torna, poi approda a un organismo che vigila su entrambi.", "headlines.39": "La polizza copre l'evento, escluse le circostanze in cui l'evento si verifica.", "headlines.40": "La banca si scusa. Le scuse sono diffuse da un ufficio creato per diffonderle.", "headlines.41": "L'uomo che ha rifiutato le condizioni è ora oggetto di uno studio sui non aderenti.", "headlines.42": "Tasso alzato per combattere l'inflazione. Inflazione alzata per combattere il tasso.", "headlines.43": "Una piattaforma di scambio sospende i prelievi, adducendo una domanda travolgente di prelievi.", "headlines.44": "La Luna è stata data nuovamente in garanzia. Gli astronomi chiedono a chi.", "headlines.45": "La violazione dei dati riguarda tutti. L'azienda offre a tutti dodici mesi di monitoraggio per guardare la cosa mentre accade.", "headlines.46": "Aggiornato il modello di rating. Stessi titoli, lettere migliori, carta identica.", "headlines.47": "Un fondo sovrano investe in una strada per il cui uso vi farà anche pagare il pedaggio.", "headlines.48": "Concordato il rinvio del procedimento. Il rinvio è stato a sua volta rinviato.", "headlines.49": "Uno studio rileva che la casa è inaccessibile. Lo studio è finanziato dalla parte a cui la cosa fa comodo.", "headlines.50": "Un detentore anonimo muove il mercato con una frase e la fotografia di un cane.", "headlines.51": "Token dichiarato moneta a corso legale in una nazione di 300.000 abitanti. Volumi invariati. Copertura mediatica enorme.", "headlines.52": "Annunciata la quotazione su una grande piattaforma di scambio. La piattaforma siamo noi, con un dominio diverso.", "headlines.53": "La fondazione costituita per donare il denaro riferisce un ottimo anno di investimenti.", "headlines.54": "La commissione fissa l'indice di riferimento. I membri della commissione prezzano i contratti su quell'indice.", "headlines.55": "La società terrapiattista apre una filiale in ogni direzione.", "headlines.56": "Tetto del debito innalzato alle tre del mattino dopo essere stato definito non negoziabile alle nove di sera.", "headlines.57": "Un proprietario di casa legge ad alta voce la clausola 14. La clausola 14 si rifiuta di essere letta ad alta voce.", "headlines.58": "Il salvataggio è definito un prestito, il prestito è definito un dono, il dono è definito leadership.", "headlines.59": "Un analista abbassa il nostro giudizio. Il datore di lavoro dell'analista scopre di avere bisogno dei nostri mandati.", "headlines.60": "La banca centrale stampa una quantità record e chiede al pubblico di non farne un caso strano.", "headlines.61": "La relazione del garante è pubblicata integralmente, di venerdì, in un carattere tipografico.", "ui.tabEnd": "Dotazione", "ui.endNone": "Non esiste ancora alcuna fondazione.", "ui.endNone2": "Possedere il mondo paga un dividendo. Un dividendo speso è un dividendo perduto; un dividendo conferito in dotazione è un dividendo che dota a sua volta.", "ui.endTitle": "La Dotazione", "ui.endEndowed": "conferiti", "ui.endTaken": "distribuito a oggi", "ui.endMultiple": "crescita sui conferimenti", "ui.endPerQuarter": "capitalizzazione a trimestre", "ui.endNextQuarter": "prossimo trimestre", "ui.endNote": "Il capitale non si spende mai — si spende soltanto ciò che rende. Quanto lasciate dentro è ciò che si capitalizza il trimestre successivo, ed è tutto l'argomento, oltre che tutta la trappola. La fondazione sopravvive alle vostre crisi provocate; un trust non è una banca. Non sopravvive a una riforma monetaria, perché non vi sopravvive nulla.", "ui.endEndow": "Conferisci", "ui.endDepositDs": "Portatelo fuori dalla vostra portata, che è dove lavora di più.", "ui.endPayoutTitle": "Politica di Distribuzione", "ui.endPayoutNote": "La quota della crescita di ciascun trimestre che arriva a voi. Tutto ciò che non prelevate resta dentro e rende di nuovo. A distribuzione nulla la fondazione si limita a diventare più grande, cosa che l'atto descrive come il suo scopo.", "ui.endDistributed": "della crescita distribuita", "ui.endKept": "Trattenuto e capitalizzato", "ui.endPaidOut": "Distribuito a voi", "ui.endAutoTitle": "Istruzione Permanente sui Dividendi", "ui.endAutoTaxed": "La quota dei vostri dividendi versata direttamente alla fondazione. Per ora subisce la ritenuta all'ingresso.", "ui.endAutoExempt": "La quota dei vostri dividendi versata direttamente alla fondazione. Non si applica alcuna ritenuta: la fondazione è residente altrove.", "ui.endUpsTitle": "Strumenti dell'Atto", "ui.endUpsNote": "Acquistati con il capitale della fondazione stessa, che è ciò a cui serve il capitale di una fondazione. Ciascuno è permanente.", "ui.endDissolveTitle": "Liquidazione", "ui.endDissolve": "Sciogli il Trust", "ui.endDissolveDs": "Liquidate il capitale e riportatelo a libro. Il quaranta per cento va a chi ha redatto l'atto in cui si dice che non si poteva fare.", "ui.mDissolveTitle": "Sciogliere il Trust?", "ui.mDissolve1": "L'atto dice che il capitale è inalienabile. L'atto è stato redatto da uno studio che redige anche l'eccezione, e fattura entrambe.", "ui.mDissolveOut": "Riportato a libro:", "ui.mDissolve2": "La capitalizzazione si ferma qui. Il quaranta per cento del capitale è trattenuto a titolo di compensi. La fondazione continua a esistere, perché scioglierla del tutto solleverebbe domande.", "ui.btnDissolveTrust": "Sciogli", "ui.dEndUp": "Atto modificato — {n}.", "ui.dDissolve": "Il trust è stato sciolto. {m} riportati a libro, il resto trattenuto a titolo di compensi.", "ui.gCompound": "far rendere alla fondazione l'80% in più di quanto conferito", "ui.endBest": "massimo raggiunto", "ui.endBestNote": "La soglia di capitolo legge il rapporto migliore mai raggiunto dal fondo, così conferire altro denaro non ve lo toglie mai.", "ui.lmEndBal": "Capitale della Dotazione", "ui.lmEndRate": "Tasso di capitalizzazione", "ui.lmEndMult": "Crescita sui conferimenti", "ui.tokSlots": "attivi", "ui.tokBuySlot": "Apri un Desk", "ui.tokDead": "andato a zero", "ui.tokFromPeak": "dal massimo", "ui.tokOverOne": "{n} è concluso. {m} realizzati nell'arco della sua vita. I detentori hanno formato un gruppo di chat, poi un'azione di classe, poi un gruppo di chat più piccolo.", "ui.tokPosition": "La Vostra Posizione", "ui.tokPositionNote": "L'offerta costa poco quando nessuno la vuole e molto quando la vogliono tutti, e voi siete l'unica parte a sapere che cosa è già in calendario. Comprate le macerie, organizzate la ripresa, andatevene prima della fine.", "ui.tokBuy10": "Compra il 10% del flottante", "ui.tokBuy35": "Compra il 35% del flottante", "ui.tokBuyDs": "Sottrarre offerta al mercato fa salire il prezzo, effetto collaterale che avete messo a bilancio.", "ui.tokEndorseTitle": "Menzioni a Pagamento", "ui.tokEndorseNote": "Nessuno di loro dichiarerà l'accordo, perché a nessuno di loro è stato detto che esiste. La capitalizzazione salta subito e ridiscende nei trimestri successivi; stare dall'altra parte di quel movimento è tutta l'abilità richiesta.", "ui.tokEndorseCool": "Dell'ultima menzione si sta ancora parlando. Nessuno di credibile è disponibile per altri {n} trimestri.", "ui.tokProgTitle": "Il Programma", "ui.dTokSlot": "È stato aperto il {n}° desk di emissione.", "ui.dEndorse": "{w} ha menzionato {n}. La capitalizzazione si è mossa del +{p}% prima che la frase finisse.", "ui.mRug3b": "Il desk resta aperto. La prossima emissione costerà di più da lanciare, e verrà creduta anche quella.", "ui.lmTokLive": "Emissioni attive / desk"});
+TRADD("zh",{"endups.purpose.name": "永续宗旨条款", "endups.purpose.nd": "契约所载的宗旨如此宽泛，以致任何一笔支出都不可能促进它。每季度复利 +0.6 个百分点。", "endups.advisors.name": "由前监管者组成的顾问委员会", "endups.advisors.nd": "他们非常清楚，现任监管者被训练成会问哪些问题。每季度复利 +0.8 个百分点。", "endups.domicile.name": "一个便利注册地", "endups.domicile.nd": "基金会的居民身份设在一个有国旗、有登记处、且不会追问的法域。缴入基金会的股息不再被代扣。", "endups.mandate.name": "再投资授权", "endups.mandate.nd": "任何分派均须经一个从未召集过的理事会表决通过。每季度复利 +1.0 个百分点。", "endups.matched.name": "配捐计划", "endups.matched.nd": "每一笔捐入都由一家关联基金会在下一季度等额配捐，而那家关联基金会就是本基金会。捐入按 125% 入账。", "endups.immortal.name": "该文书不可撤销", "endups.immortal.nd": "你不能撤销，你的继承人不能撤销，给它发过特许状的那个国家也不能。每季度复利 +1.4 个百分点。", "endorse.magnate.name": "一位有发帖习惯的实业家", "endorse.magnate.ds": "他造火箭，他造汽车，凌晨两点他造句子。其中一句会是关于你的。", "endorse.anchor.name": "一位深夜时段的节目主持人", "endorse.anchor.ds": "他并不懂，他很坦诚地这么说，然后照样推荐。他的观众觉得这份坦诚很有说服力。", "endorse.athlete.name": "一位处于合约空档期的运动员", "endorse.athlete.ds": "一张照片，一个交易代码，一句三个词的配文。合规披露在第九行。", "endorse.fund.name": "一家事后才披露持仓的基金", "endorse.fund.ds": "他们先建仓，再发布研究观点，顺序就是如此，而他们把这称为信念。", "endorse.minister.name": "一个小共和国的部长", "endorse.minister.ds": "他在一段于海滩上拍摄的电视讲话中宣布它为法定货币。国际货币基金组织发表了一份声明；价格并不在意。", "chain.end.name": "基金会", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "设计上通缩：我们销毁每一笔交易的一部分，也销毁每一个问题的一部分。", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "跨境、即时、终局。三项之中已有两项被独立观察到。", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "负碳共识，由一家我们介绍给审计师的事务所审计。", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "一座连接传统金融与未来的桥梁，两端各收一道过路费。", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "自我托管，因此没有人能冻结你的资产，包括你自己。", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "一种生息的储备资产。实践中，是收益在撑着储备。", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "真实世界资产，已代币化。真实世界并未被要求会签。", "headlines.18": "季度业绩超出预期；该预期已于周二由公布业绩的同一批人修订。", "headlines.19": "放松管制方案出台，以它将促成的那场危机命名。", "headlines.20": "公司被罚款，金额相当于其借此赚得的那个季度的 0.4%。股价因确定性而上涨。", "headlines.21": "爬行动物代表团于旁听席就座。会议纪要记为“出席情况无异常”。", "headlines.22": "化学尾迹预算科目重新归类为“与天气相关的品牌曝光”。", "headlines.23": "委员会主席发现了该行业，比该行业发现该委员会早两天。", "headlines.24": "加氟补贴认购超额。申请人表示对此感觉很配合。", "headlines.25": "散户被劝要着眼长期，劝告出自一个已于周四清仓的交易台。", "headlines.26": "审计师的费用被称为不具重大性。最先这么说的是审计师本人。", "headlines.27": "丹佛地下夹层扩建获批。图纸重新归类为室内设计。", "headlines.28": "央行官员说了“暂时性”，全场随即放松了十一个月。", "headlines.29": "紧急工具于周日午夜开启，周一关闭，周二永久重开。", "headlines.30": "观察到鸟停在摄像头上。也观察到摄像头停在鸟上。", "headlines.31": "游说信息披露已提交。该笔支出的回报率估计为 22,000%，脚注称其为近似值。", "headlines.32": "某国承诺改革，以换取一笔额度。该笔额度不作任何承诺，以换取那场改革。", "headlines.33": "养老基金采纳了另类资产配置。那个另类就是我们。", "headlines.34": "压力测试全体参试机构通过，包括后来已不存在的那两家。", "headlines.35": "条款已更新。继续呼吸即视为接受。", "headlines.36": "林苑静修会提前结束。与会者以异乎寻常的篇幅描述了天气。", "headlines.37": "聘请顾问寻找可节省的开支。开支找到了。顾问费恰好等于那笔节省。", "headlines.38": "监管官员转投业界，随后回任，随后转往一个同时监管两者的机构。", "headlines.39": "该保险产品承保该事件，但不含该事件得以发生的各种情形。", "headlines.40": "银行致歉。致歉由一个为发布致歉而设立的部门发出。", "headlines.41": "拒绝接受条款的那个人，如今成了一项“非参与者”研究的对象。", "headlines.42": "加息，以对抗通胀。通胀上行，以对抗利率。", "headlines.43": "交易所暂停提现，理由是提现需求过于旺盛。", "headlines.44": "月球已被再抵押。天文学家追问：抵押给了谁。", "headlines.45": "数据泄露波及所有人。公司向所有人提供十二个月的监测服务，可全程看着它发生。", "headlines.46": "评级模型已更新。同样的证券，更好看的字母，一模一样的纸。", "headlines.47": "主权基金投资了一条公路，并将就你使用该公路向你收费。", "headlines.48": "已达成暂缓起诉协议。该项暂缓本身也已被暂缓。", "headlines.49": "研究发现住房已负担不起。该研究由觉得这个结论很方便的一方出资。", "headlines.50": "一位匿名持有人以一句话和一张狗的照片撬动了市场。", "headlines.51": "某代币在一个三十万人口的国家被宣布为法定货币。成交量毫无变化。报道铺天盖地。", "headlines.52": "宣布在一家主流交易所上线。那家交易所就是我们，换了个域名。", "headlines.53": "为把钱捐出去而设立的基金会，公布了一个投资业绩强劲的年度。", "headlines.54": "委员会设定基准。委员会成员依该基准为合约定价。", "headlines.55": "地平说学会朝每一个方向都开设了一间分支机构。", "headlines.56": "债务上限于凌晨三点上调；晚上九点它还被称为不容谈判。", "headlines.57": "业主把第 14 条大声念了出来。第 14 条拒绝被大声念出。", "headlines.58": "救助被称为贷款，贷款被称为赠与，赠与被称为担当。", "headlines.59": "分析师下调我方评级。分析师的东家发现自己需要我方的业务。", "headlines.60": "央行印钞量创下纪录，并请公众不要把气氛搞得很尴尬。", "headlines.61": "监察专员报告全文公布，在一个周五，用了一种字体。", "ui.tabEnd": "基金会", "ui.endNone": "还没有基金会。", "ui.endNone2": "持有全世界会带来股息。花掉的股息就是花掉了；捐入基金会的股息，则会自己继续派发股息。", "ui.endTitle": "基金会", "ui.endEndowed": "已捐入", "ui.endTaken": "累计分派", "ui.endMultiple": "投入增值", "ui.endPerQuarter": "每季度复利", "ui.endNextQuarter": "于下季度", "ui.endNote": "本金永不动用——动用的只有它赚到的部分。你留在里面的，正是下一季度用来复利的，这既是全部的道理，也是全部的圈套。基金会挺得过你人为策划的危机；信托不是银行。它挺不过一次货币改革，因为没有任何东西挺得过。", "ui.endEndow": "捐入基金会", "ui.endDepositDs": "把它移到你自己够不到的地方——在那里它最卖力。", "ui.endPayoutTitle": "分派政策", "ui.endPayoutNote": "每季度增值中真正到你手上的那一份。你不取走的部分留在里面，继续生钱。分派为零时，基金会只是不断变大——契约把这称作它的宗旨。", "ui.endDistributed": "的增值予以分派", "ui.endKept": "留存并复利", "ui.endPaidOut": "分派给你", "ui.endAutoTitle": "股息常设指令", "ui.endAutoTaxed": "你的股息中直接缴入基金会的比例。目前，这部分在进入时仍会被代扣。", "ui.endAutoExempt": "你的股息中直接缴入基金会的比例。不再代扣任何税款：基金会的居民身份在别处。", "ui.endUpsTitle": "契约条款", "ui.endUpsNote": "以基金会自己的本金购买——基金会的本金正是干这个用的。每一项都是永久的。", "ui.endDissolveTitle": "清算解散", "ui.endDissolve": "打破信托", "ui.endDissolveDs": "将本金变现，收回账簿。其中四成归那些起草了“此事不可为”这份文书的人。", "ui.mDissolveTitle": "打破信托？", "ui.mDissolve1": "契约写明本金不可转让。该契约出自一家律所之手，而那家律所同样起草例外条款，并就两者分别收费。", "ui.mDissolveOut": "返还账簿：", "ui.mDissolve2": "复利到此为止。本金的四成作为费用被留下。基金会将继续存在，因为把它彻底解散会引来提问。", "ui.btnDissolveTrust": "打破", "ui.dEndUp": "契约已修订 —— {n}。", "ui.dDissolve": "信托已被打破。{m} 已返还账簿，余额作为费用留存。", "ui.gCompound": "让基金会的价值增长到投入本金的 1.8 倍", "ui.endBest": "历史最高", "ui.endBestNote": "章节门槛读取的是本基金曾经达到过的最高倍数，因此再多捐入也绝不会把它从你手上拿走。", "ui.lmEndBal": "基金会本金", "ui.lmEndRate": "复利率", "ui.lmEndMult": "投入增值倍数", "ui.tokSlots": "运行中", "ui.tokBuySlot": "增设部门", "ui.tokDead": "已归零", "ui.tokFromPeak": "距峰值", "ui.tokOverOne": "{n} 已结束。其存续期内共实现 {m}。持有者先建了一个群，然后提起了集体诉讼，然后建了一个更小的群。", "ui.tokPosition": "你的头寸", "ui.tokPositionNote": "没人要的时候供给便宜，人人都要的时候供给昂贵，而只有你一方知道接下来排定了什么。买下残骸，安排好复苏，在它结束之前离场。", "ui.tokBuy10": "买入 10% 流通量", "ui.tokBuy35": "买入 35% 流通量", "ui.tokBuyDs": "把供给从市场上抽走会推高价格——这是一个你早已列入预算的副作用。", "ui.tokEndorseTitle": "付费提及", "ui.tokEndorseNote": "他们谁也不会披露这项安排，因为谁也没有被告知存在这样一项安排。市值会立刻跳升，并在其后几个季度里回落；站在这一跳一落的另一边，就是全部的功夫所在。", "ui.tokEndorseCool": "上一次提及仍在被议论。今后 {n} 个季度内，没有可信的人可以出面。", "ui.tokProgTitle": "项目运作", "ui.dTokSlot": "第 {n} 个发行部门已开设。", "ui.dEndorse": "{w} 提到了 {n}。话音未落，市值已 +{p}%。", "ui.mRug3b": "该发行部门继续保留。下一次发行的成本会更高，而它同样会有人相信。", "ui.lmTokLive": "运行中发行 / 部门"});
+TRADD("ko",{"endups.purpose.name": "영구 목적 조항", "endups.purpose.nd": "증서가 정한 목적이 너무 넓어, 어떤 지출로도 그 목적을 진전시킬 수 없다. 분기 복리 +0.6%p.", "endups.advisors.name": "전직 감독관으로 구성된 자문위원회", "endups.advisors.nd": "그들은 현직 감독관들이 어떤 질문을 하도록 훈련받았는지 정확히 안다. 분기 복리 +0.8%p.", "endups.domicile.name": "편의상의 주소지", "endups.domicile.nd": "재단은 국기와 등기소는 있고 추가 질의는 없는 관할에 거주한다. 기금으로 들어가는 배당은 더 이상 원천징수되지 않는다.", "endups.mandate.name": "재투자 위임 조항", "endups.mandate.nd": "분배에는 한 번도 소집된 적 없는 이사회의 의결이 필요하다. 분기 복리 +1.0%p.", "endups.matched.name": "출연금 매칭", "endups.matched.nd": "모든 출연금은 한 분기 뒤 제휴 재단에서 같은 금액이 보태진다. 그 제휴 재단은 이 재단이다. 출연금은 125%로 계상된다.", "endups.immortal.name": "이 증서는 철회될 수 없다", "endups.immortal.nd": "당신도, 당신의 상속인도, 이를 인가한 국가도 철회할 수 없다. 분기 복리 +1.4%p.", "endorse.magnate.name": "게시 습관이 있는 산업가", "endorse.magnate.ds": "그는 로켓을 만들고, 자동차를 만들고, 새벽 두 시에는 문장을 만든다. 그중 하나는 당신에 관한 것이 된다.", "endorse.anchor.name": "심야 방송 진행자", "endorse.anchor.ds": "그는 그것을 이해하지 못하고, 이해하지 못한다고 다정하게 말하고, 그래도 추천한다. 시청자들은 그 솔직함에 설득된다.", "endorse.athlete.name": "계약 공백기의 운동선수", "endorse.athlete.ds": "사진 한 장, 종목 코드 하나, 그리고 세 단어짜리 설명. 준법 공시는 아홉 번째 줄에 있다.", "endorse.fund.name": "포지션을 사후에 공시하는 펀드", "endorse.fund.ds": "그들은 먼저 포지션을 잡고, 그다음 논거를 발표했다. 그 순서를 그들은 확신이라고 부른다.", "endorse.minister.name": "작은 공화국의 장관", "endorse.minister.ds": "그는 해변에서 촬영한 대국민 담화에서 이를 법정통화로 선언한다. IMF가 성명을 낸다. 가격은 개의치 않는다.", "chain.end.name": "기금", "tokenNames.7.n": "ASCENDANT", "tokenNames.7.pitch": "설계상 디플레이션형이다. 모든 거래의 일부를 소각하고, 모든 질문의 일부도 소각한다.", "tokenNames.8.n": "MERIDIAN", "tokenNames.8.pitch": "국경을 넘어, 즉시, 최종적으로. 셋 중 둘은 외부에서 관측된 바 있다.", "tokenNames.9.n": "LUMEN", "tokenNames.9.pitch": "탄소 마이너스 합의 알고리즘. 감사인에게 우리가 소개해 준 법인이 검증했다.", "tokenNames.10.n": "PONTIFEX", "tokenNames.10.pitch": "전통 금융과 미래를 잇는 다리. 양쪽 끝 모두에서 통행료를 받는다.", "tokenNames.11.n": "SANCTUM", "tokenNames.11.pitch": "자기수탁 방식이므로 누구도 당신의 자산을 동결할 수 없다. 당신도 포함해서.", "tokenNames.12.n": "HALCYON", "tokenNames.12.pitch": "수익을 낳는 준비자산. 실제로는 그 수익이 준비금을 떠받치고 있다.", "tokenNames.13.n": "VESSEL", "tokenNames.13.pitch": "실물 자산을 토큰화했다. 실물 세계에는 부서(副署)를 요청하지 않았다.", "headlines.18": "분기 실적, 시장 기대치 상회. 해당 기대치는 화요일에 발표 당사자들이 조정한 것.", "headlines.19": "규제 완화 법안, 그 법안이 가능하게 할 위기의 이름을 따서 명명.", "headlines.20": "해당 행위로 번 분기 수입의 0.4%를 과징금으로 부과. 불확실성 해소에 주가 상승.", "headlines.21": "파충류 대표단이 방청석에 착석. 회의록에는 ‘특이 참석자 없음’으로 기재.", "headlines.22": "켐트레일 예산 항목, ‘기상 인접 브랜드 인지도’로 재분류.", "headlines.23": "위원장이 해당 업종을 알게 된 것은, 업종이 위원회를 알게 되기 이틀 전.", "headlines.24": "불소 지원금 신청 초과 마감. 신청자들은 그에 대해 온순한 기분이라고 진술.", "headlines.25": "개인 투자자에게 장기 투자를 당부한 데스크, 목요일에 포지션 청산.", "headlines.26": "감사 보수는 중요하지 않은 금액으로 설명됨. 그렇게 설명한 것은 감사인이 먼저.", "headlines.27": "덴버 지하층 증축 승인. 설계도는 인테리어 도면으로 재분류.", "headlines.28": "중앙은행 총재가 ‘일시적’이라고 말하자 회의장이 열한 달 동안 안심.", "headlines.29": "긴급 지원 창구, 일요일 자정 개설, 월요일 폐쇄, 화요일 영구 재개설.", "headlines.30": "새가 카메라에 앉아 있는 것이 관측됨. 카메라가 새에 앉아 있는 것도 관측됨.", "headlines.31": "로비 지출 공시 제출. 투입 대비 수익률 22,000%로 추정, 각주에 ‘개략치’ 표기.", "headlines.32": "한 국가가 지원 창구를 받는 대가로 개혁을 약속. 지원 창구는 그 개혁의 대가로 아무것도 약속하지 않음.", "headlines.33": "연기금, 대체투자 배분 도입. 그 대체투자는 우리다.", "headlines.34": "스트레스 테스트 참여 기관 전원 통과. 이후 존재하지 않게 된 두 곳 포함.", "headlines.35": "약관 개정. 호흡을 계속하는 것은 동의로 간주됨.", "headlines.36": "숲속 수련회 조기 종료. 참석자들은 날씨를 이례적으로 길게 묘사.", "headlines.37": "비용 절감 방안을 찾도록 컨설턴트 선임. 절감액 도출. 컨설팅 보수는 그 절감액과 동일.", "headlines.38": "감독당국 인사, 민간으로 이직, 이후 복귀, 이후 양쪽을 감독하는 기구로 이동.", "headlines.39": "해당 사고를 보장하는 보험 상품 출시. 그 사고가 발생하는 상황은 면책.", "headlines.40": "은행 사과. 사과문은 사과문을 내기 위해 신설된 부서가 발표.", "headlines.41": "약관에 동의하지 않은 한 사람, 현재 비참여자 연구의 대상이 됨.", "headlines.42": "인플레이션을 잡기 위해 금리 인상. 금리를 잡기 위해 인플레이션 인상.", "headlines.43": "거래소, 출금 수요 폭주를 이유로 출금 중단.", "headlines.44": "달이 재담보로 제공됨. 천문학자들은 누구에게냐고 질의.", "headlines.45": "정보 유출, 전원 해당. 회사는 전원에게 그 일이 벌어지는 것을 12개월간 지켜볼 기회를 제공.", "headlines.46": "신용평가 모형 개편. 같은 증권, 더 좋은 등급, 똑같은 종이.", "headlines.47": "국부펀드, 도로에 투자. 그 도로의 통행료도 국부펀드가 받는다.", "headlines.48": "기소유예 합의. 그 유예 자체가 다시 유예됨.", "headlines.49": "주거비 감당 불가 연구 결과 발표. 연구비는 그 결과가 편리한 쪽이 부담.", "headlines.50": "익명의 보유자가 문장 하나와 개 사진 한 장으로 시장을 움직임.", "headlines.51": "인구 30만 국가에서 해당 토큰을 법정통화로 선언. 거래량 변동 없음. 보도량 막대.", "headlines.52": "주요 거래소 상장 발표. 그 거래소는 도메인만 바꾼 우리다.", "headlines.53": "돈을 나눠 주려고 설립된 재단, 우수한 투자 성과 보고.", "headlines.54": "위원회가 지표를 정한다. 위원회 위원들은 그 지표에 연동해 계약가를 매긴다.", "headlines.55": "평면지구협회, 모든 방향으로 지부 개설.", "headlines.56": "저녁 9시에 협상 불가라던 채무 한도, 새벽 3시에 상향.", "headlines.57": "주택 소유자가 제14조를 소리 내어 읽음. 제14조는 소리 내어 읽히기를 거부.", "headlines.58": "구제금융은 대출로, 대출은 선물로, 선물은 리더십으로 설명됨.", "headlines.59": "한 애널리스트가 우리를 하향. 그 애널리스트의 소속사는 우리 거래가 필요하다는 사실을 발견.", "headlines.60": "중앙은행, 사상 최대 규모 발행. 국민에게는 그 일을 이상하게 만들지 말아 달라고 당부.", "headlines.61": "옴부즈맨 보고서 전문 공개. 금요일에, 어떤 서체로.", "ui.tabEnd": "기금", "ui.endNone": "아직 재단이 없다.", "ui.endNone2": "세계를 보유하면 배당이 나온다. 쓴 배당은 사라진 배당이고, 출연한 배당은 다시 배당을 낳는 배당이다.", "ui.endTitle": "기금", "ui.endEndowed": "출연액", "ui.endTaken": "누적 분배액", "ui.endMultiple": "출연 대비 증식", "ui.endPerQuarter": "분기 복리", "ui.endNextQuarter": "다음 분기", "ui.endNote": "원본은 결코 쓰이지 않는다 — 쓰이는 것은 거기서 나온 수익뿐이다. 남겨 둔 만큼이 다음 분기에 복리로 불어난다. 그것이 이 제도의 전체 논거이자 전체 함정이다. 재단은 당신이 연출한 위기에서 살아남는다. 신탁은 은행이 아니기 때문이다. 다만 통화 개혁에서는 살아남지 못한다. 거기서는 아무것도 살아남지 못하기 때문이다.", "ui.endEndow": "출연", "ui.endDepositDs": "당신 손이 닿지 않는 곳으로 옮긴다. 돈은 거기서 가장 열심히 일한다.", "ui.endPayoutTitle": "분배 정책", "ui.endPayoutNote": "분기 수익 중 당신에게 도달하는 비중이다. 가져가지 않은 것은 전부 안에 남아 다시 수익을 낸다. 분배가 없으면 재단은 그저 커지기만 하는데, 증서는 그것을 재단의 목적이라고 적고 있다.", "ui.endDistributed": "수익 분배", "ui.endKept": "유보 및 복리 적립", "ui.endPaidOut": "당신에게 분배", "ui.endAutoTitle": "배당 상시 지시", "ui.endAutoTaxed": "당신의 배당 중 곧바로 재단으로 들어가는 비중이다. 지금은 들어가는 길에 원천징수된다.", "ui.endAutoExempt": "당신의 배당 중 곧바로 재단으로 들어가는 비중이다. 원천징수는 없다. 재단은 다른 곳에 거주한다.", "ui.endUpsTitle": "증서의 조항", "ui.endUpsNote": "재단 자체의 원본으로 매입한다. 재단의 원본이란 원래 그러라고 있는 것이다. 각 조항은 영구적이다.", "ui.endDissolveTitle": "청산", "ui.endDissolve": "신탁 파기", "ui.endDissolveDs": "원본을 청산해 장부로 되돌린다. 그중 40%는 이 일이 불가능하다고 증서를 기초한 사람들에게 간다.", "ui.mDissolveTitle": "신탁을 파기할 것인가?", "ui.mDissolve1": "증서는 원본이 양도 불가라고 적고 있다. 그 증서를 기초한 법무법인은 그 예외 조항도 기초하며, 양쪽 모두에 대해 청구한다.", "ui.mDissolveOut": "장부 반환액:", "ui.mDissolve2": "복리는 여기서 멈춘다. 원본의 40%는 수수료로 공제된다. 재단은 계속 존재한다. 완전히 해산하면 질문이 생기기 때문이다.", "ui.btnDissolveTrust": "파기한다", "ui.dEndUp": "증서 개정 — {n}.", "ui.dDissolve": "신탁이 파기되었다. {m} 장부로 반환, 잔액은 수수료로 공제.", "ui.gCompound": "재단이 출연액보다 80% 더 벌게 한다", "ui.endBest": "최고 도달", "ui.endBestNote": "챕터 개방 조건은 기금이 지금까지 도달한 최고 배율을 기준으로 판정한다. 그래서 돈을 더 출연해도 이미 도달한 것이 사라지지는 않는다.", "ui.lmEndBal": "기금 원본", "ui.lmEndRate": "복리율", "ui.lmEndMult": "출연 대비 증식", "ui.tokSlots": "가동 중", "ui.tokBuySlot": "데스크 개설", "ui.tokDead": "0으로 소멸", "ui.tokFromPeak": "고점 대비", "ui.tokOverOne": "{n} — 여기서 끝난다. 생애 누적 실현액 {m}. 보유자들은 단체 대화방을 만들었고, 이어 집단소송을 냈고, 이어 더 작은 단체 대화방을 만들었다.", "ui.tokPosition": "당신의 포지션", "ui.tokPositionNote": "물량은 아무도 원하지 않을 때 싸고 모두가 원할 때 비싸다. 그리고 다음 일정이 무엇인지 아는 당사자는 당신뿐이다. 잔해를 사들이고, 회복을 준비시키고, 끝나기 전에 빠져나온다.", "ui.tokBuy10": "유통량 10% 매수", "ui.tokBuy35": "유통량 35% 매수", "ui.tokBuyDs": "시장에서 물량을 걷어 내면 가격이 오른다. 그 부수 효과는 이미 예산에 반영되어 있다.", "ui.tokEndorseTitle": "유료 언급", "ui.tokEndorseNote": "그들 중 누구도 이 계약을 공시하지 않는다. 계약이 있다는 말을 들은 사람이 아무도 없기 때문이다. 시가총액은 즉시 뛰었다가 이후 몇 분기에 걸쳐 되돌아온다. 그 반대편에 서 있는 것이 이 일의 전부다.", "ui.tokEndorseCool": "직전 언급이 아직 회자되고 있다. 앞으로 {n}개 분기 동안은 신뢰할 만한 인물을 섭외할 수 없다.", "ui.tokProgTitle": "프로그램", "ui.dTokSlot": "제{n} 발행 데스크가 개설되었다.", "ui.dEndorse": "{w} — {n} 언급. 문장이 끝나기도 전에 시가총액 +{p}%.", "ui.mRug3b": "데스크는 계속 열려 있다. 다음 발행은 비용이 더 들고, 그것도 믿길 것이다.", "ui.lmTokLive": "가동 중 발행 / 데스크"});
+
 /* ---------- persistence ----------
    The Claude-artifact build cannot touch browser storage; this web build can,
    so the ledger saves itself and the machine keeps working while you are away. */
@@ -8490,9 +9045,35 @@ function parseSave(raw){
    tok/war/mkt after a save was written arrives missing and throws on the next
    tick. Heal them against fresh templates instead. */
 function healNested(){
-  S.tok=Object.assign(freshToken(),S.tok||{});
+  S.tokp=Object.assign(freshTokP(),S.tokp||{});
+  if(!Array.isArray(S.tokp.list)) S.tokp.list=[];
+  S.tokp.list=S.tokp.list.filter(t=>t&&typeof t==="object").map(t=>{
+    const f=Object.assign(freshTok(t.idx|0),t);
+    if(!Array.isArray(f.hist)||!f.hist.length) f.hist=[f.px||0];
+    for(const k of ["mcap","launchMcap","px","held","hype","trust","holders","reserve","raised","spent","peak","endCool","endUsed"])
+      if(typeof f[k]!=="number"||!isFinite(f[k])) f[k]=0;
+    if(!(f.launchMcap>0)) f.launchMcap=Math.max(1,f.mcap||1);
+    return f;
+  });
+  S.tokp.slots=Math.max(3,Math.min(TOK_SLOTS_MAX,S.tokp.slots|0));
+  /* A v1.7 ledger carried a single token. Promote it into the portfolio rather
+     than dropping it: somebody is mid-generation when this build lands. */
+  if(S.tok&&(S.tok.live||S.tok.raised>0)&&!S.tokp.list.length){
+    const o=S.tok, t=freshTok(o.idx|0);
+    Object.assign(t,{live:!!o.live,dead:!!o.dead,mcap:o.mcap||0,launchMcap:o.launchMcap||Math.max(1,o.mcap||1),
+      px:o.px||0,held:o.held||0,hype:o.hype||0,trust:o.trust||0,holders:o.holders||0,
+      reserve:o.reserve||0,staking:!!o.staking,raised:o.raised||0,hist:Array.isArray(o.hist)?o.hist:[o.px||0]});
+    S.tokp.list.push(t);
+    S.tokp.launched=Math.max(1,o.gen|0);
+    S.tokp.raised=o.raised||0;
+  }
+  delete S.tok;
   S.war=Object.assign(freshWar(),S.war||{});
   S.mkt=Object.assign(freshMarket(),S.mkt||{});
+  S.end=Object.assign(freshEndow(),S.end||{});
+  if(!S.end.ups) S.end.ups={};
+  for(const k of ["bal","deposited","taken","payout","auto","best"])
+    if(typeof S.end[k]!=="number"||!isFinite(S.end[k])) S.end[k]=0;
   for(const o of ["px","pos","cost","hist"]) if(!S.mkt[o]) S.mkt[o]={};
   for(const x of SECTORS){
     if(typeof S.mkt.px[x.id]!=="number"||!isFinite(S.mkt.px[x.id])) S.mkt.px[x.id]=100;
@@ -8500,7 +9081,7 @@ function healNested(){
     if(typeof S.mkt.cost[x.id]!=="number"||!isFinite(S.mkt.cost[x.id])) S.mkt.cost[x.id]=0;
     if(!Array.isArray(S.mkt.hist[x.id])||!S.mkt.hist[x.id].length) S.mkt.hist[x.id]=[S.mkt.px[x.id]];
   }
-  if(!Array.isArray(S.tok.hist)) S.tok.hist=[S.tok.px||0];
+
   if(!S.mkt.havens) S.mkt.havens={};
   if(!S.war.applied) S.war.applied={};
   if(!S.war.won) S.war.won={};
@@ -8628,15 +9209,38 @@ document.addEventListener("keydown",e=>{
   if(e.code==="Space"&&!$("#modal").classList.contains("on")){ e.preventDefault(); doClick(); }
 });
 
-/* ticker: duration derived from text width so it stays readable */
-(function(){
-  const el=$("#tick");
-  if(!el.textContent) el.textContent=HEADLINES.slice().sort(()=>Math.random()-.5).join("   ✦   ")+"   ✦   ";
-  requestAnimationFrame(()=>{
-    const w=el.scrollWidth||4000;
-    el.style.animationDuration=Math.round(w/58)+"s";   // ~58 px/sec
-  });
-})();
+/* THE WIRE
+   It used to be one enormous string scrolling on a 150-second loop, which meant
+   the same tirade every two and a half minutes and no way to read the end of it.
+   Now it holds one line at a time and fades between them, drawn from a shuffled
+   bag so nothing repeats until everything has been seen. The bag holds indices,
+   not sentences, so switching language does not strand it in the old one. Every
+   fourth line is your own news, which is how a wire actually reads. */
+let wireBag=[];
+function wireNext(){
+  const d=S.disp&&S.disp.length?S.disp[0]:null;
+  if(d && Math.random()<0.25) return {t:d.q+" — "+d.t, own:true};
+  if(!wireBag.length){
+    wireBag=HEADLINES.map((_,i)=>i);
+    for(let i=wireBag.length-1;i>0;i--){
+      const k=Math.floor(Math.random()*(i+1));
+      const v=wireBag[i]; wireBag[i]=wireBag[k]; wireBag[k]=v;
+    }
+  }
+  return {t:HEADLINES[wireBag.pop()]||"", own:false};
+}
+function wireShow(){
+  const el=$("#tick"); if(!el) return;
+  el.classList.remove("on");
+  setTimeout(()=>{
+    const n=wireNext();
+    el.textContent=n.t;
+    el.classList.toggle("own",n.own);
+    el.classList.add("on");
+  },520);
+}
+wireShow();
+setInterval(wireShow,8200);
 
 /* ---------- boot ---------- */
 snapshotEnglish();

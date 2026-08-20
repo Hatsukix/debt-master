@@ -19,20 +19,25 @@ unmanageable, you schedule the collapse yourself.
   if you harvest it first by engineering the crisis on your own schedule
 - **A prestige tree** in three branches (Capital, The State, Information), plus a
   repeatable capstone that never runs out
+- **A market whose price is fixed for the era**, so that getting richer genuinely buys
+  more of the world — with a cornering premium that makes the last tenth a campaign
+- **Compound interest**, in the one place where patience beats activity
 - **10 dossiers** that unlock after your first engineered crisis
 - **Milestone tiers** — every 10th, 25th, 50th unit of an instrument makes all of them better
 
 ### Chapters
 
-New systems open on your count of engineered crises, not on the clock.
+Each system opens on a milestone inside the one before it — never on the clock, and never on a
+counter that has nothing to do with what you just did.
 
 | | | opens at |
 |---|---|---|
 | **I** | Origination, doctrines, the policy rate | — |
-| **II** | **The Trading Floor** — five sectors with opposite sensitivities to your own rate. Your decision lands next quarter, so you are the only one who knows. Positioning inside that gap raises Regulatory Attention, and an investigation settles for a fine that is always smaller than the quarter it came from. | 3 crises |
-| **III** | **The Token** — issue your own currency, keep 80% as a founder allocation, buy hype, seed a reserve, open a staking yield paid out of the next depositor. Then decide when to pull the liquidity. | 7 crises |
-| **IV** | **Conflicts** — a siege, not a battle. Influence accrues a few points a quarter and cannot be rushed with money, so campaigns are measured in quarters. Nine targets in three tiers: inquiries, rival institutions, sovereigns. Everything you are still besieging pushes back until it falls. | 11 crises |
-| **V** | **Monetary Reform** — the meta-prestige. You do not collapse the institution this time, you collapse the money. Every contract is redenominated overnight in a currency you issue. It erases everything a crisis erases and then the things a crisis spares — the Pyramid, the token, every conflict won, your Seized Assets — and re-locks every chapter. Only the **Charter** crosses over, because the Charter is the part that says what money is. | 16 crises |
+| **II** | **The Trading Floor** — five sectors with opposite sensitivities to your own rate. Your decision lands next quarter, so you are the only one who knows. Positioning inside that gap raises Regulatory Attention, and an investigation settles for a fine that is always smaller than the quarter it came from. | 5 nodes of the Pyramid |
+| **III** | **The Endowment** — a foundation whose capital compounds every quarter and whose charitable purpose, on inspection, is to continue to exist. A slider decides how much of each quarter's growth reaches you; everything you leave in compounds again. It survives your engineered crises, because a trust is not a bank. | 12% of world equity |
+| **IV** | **The Token** — issue your own currency, keep 80% as a founder allocation, and run up to six of them at once. The price moves violently on its own: buy the wreckage, pay somebody to mention it, leave before the mention wears off. | the foundation earns 80% on contributions |
+| **V** | **Conflicts** — a siege, not a battle. Influence accrues a few points a quarter and cannot be rushed with money, so campaigns are measured in quarters. Nine targets in three tiers: inquiries, rival institutions, sovereigns. Everything you are still besieging pushes back until it falls. | 3 issues launched |
+| **VI** | **Monetary Reform** — the meta-prestige. You do not collapse the institution this time, you collapse the money. Every contract is redenominated overnight in a currency you issue. It erases everything a crisis erases and then the things a crisis spares — the Pyramid, the token, every conflict won, your Seized Assets — and re-locks every chapter. Only the **Charter** crosses over, because the Charter is the part that says what money is. | 4 conflicts won |
 
 ## Languages
 
