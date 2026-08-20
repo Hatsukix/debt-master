@@ -34,6 +34,20 @@ New systems open on your count of engineered crises, not on the clock.
 | **IV** | **Conflicts** — a siege, not a battle. Influence accrues a few points a quarter and cannot be rushed with money, so campaigns are measured in quarters. Nine targets in three tiers: inquiries, rival institutions, sovereigns. Everything you are still besieging pushes back until it falls. | 11 crises |
 | **V** | **Monetary Reform** — the meta-prestige. You do not collapse the institution this time, you collapse the money. Every contract is redenominated overnight in a currency you issue. It erases everything a crisis erases and then the things a crisis spares — the Pyramid, the token, every conflict won, your Seized Assets — and re-locks every chapter. Only the **Charter** crosses over, because the Charter is the part that says what money is. | 16 crises |
 
+## Languages
+
+The game ships in **8 languages**, switchable at any time from the picker in the header
+(and on the intro screen): **English, Français, Español, Deutsch, Português (BR), Italiano,
+中文 (简体), 한국어**.
+
+Everything is translated — the instruments, the doctrines, the dossiers, the Pyramid, the
+market, the token, the conflicts, the Charter, every dispatch in the ticker, every modal
+and the epilogue. The register is the same in all eight: deadpan and bureaucratic, the joke
+carried by what is stated calmly.
+
+A language only appears in the picker once it covers **every** translatable string; a partial
+translation is hidden rather than shown half-English. Your choice is saved with your ledger.
+
 ## Controls
 
 | Action | How |
