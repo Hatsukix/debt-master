@@ -92,13 +92,6 @@ people.
 It is one static HTML file with no dependencies, no build step and no server. Open
 `index.html` in a browser, or drop it on any static host.
 
-### Deploying to GitHub Pages
-
-1. Create a repository named `debt-master`
-2. Upload `index.html` (and this README) to the root of the `main` branch
-3. **Settings → Pages → Source: Deploy from a branch → `main` / `root` → Save**
-4. Wait about a minute; the URL is `https://hatsukix.github.io/debt-master/`
-
 ## Licence — read this before reusing anything
 
 **Debt Master is source-available, not open source.** © 2026 Guillaume Brin, all rights reserved.
